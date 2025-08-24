@@ -52,3 +52,7 @@ MQL4/Projects/
 MQL4/Scripts/
 MQL4/Shared Projects/
 repo/presets/.DS_Store
+
+# Runs: keep manifests and run metadata
+!repo/runs/
+!repo/runs/**

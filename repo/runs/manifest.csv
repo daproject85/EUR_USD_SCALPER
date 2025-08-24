@@ -1,0 +1,2 @@
+run_id,date,time,symbol,timeframe,magic,ea_commit,set_path,log_path,spread,model,notes
+bt-2025-07-07-0101,2025-07-07,01:01:00,EURUSD,M5,0,<ea_commit_hash>,repo/presets/backtests/EURUSD_M5_0__20250707_010100__default-grid.set,repo/sample_logs/EURUSD_0_2025.07.07_01_01_00.csv,20,Every tick,"Baseline grid run"
