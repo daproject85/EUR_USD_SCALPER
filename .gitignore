@@ -1,0 +1,43 @@
+# Ignore everything by default
+*
+
+# Allow this file
+!.gitignore
+
+# Allow top-level folders we need
+!MQL4/
+!repo/
+
+# Whitelist only these EA/include files
+!MQL4/Experts/
+!MQL4/Include/
+MQL4/Experts/*
+!MQL4/Experts/EuroScalper_LOG_v1_10.mq4
+!MQL4/Experts/EuroScalper_v1_10_decompiled.mq4
+MQL4/Include/*
+!MQL4/Include/ES_Logger.mqh
+!MQL4/Include/EuroScalper_Logging_Config.mqh
+
+# Keep our docs/tools
+!repo/docs/
+!repo/tools/
+repo/**
+!repo/docs/**
+!repo/tools/**
+
+# Explicitly ignore heavy/volatile MT4 data
+history/
+logs/
+tester/
+profiles/
+templates/
+config/
+MQL4/Files/
+MQL4/Images/
+MQL4/Indicators/
+MQL4/Libraries/
+MQL4/Logs/
+MQL4/Presets/
+MQL4/Projects/
+MQL4/Scripts/
+MQL4/Shared Projects/
