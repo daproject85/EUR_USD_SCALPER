@@ -1,4 +1,4 @@
-timestap;event;symbol;period;magic;bid;ask;spread;ticket;op;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
+timestamp;event;symbol;period;magic;bid;ask;spread;ticket;op;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
 2025.07.07 02:00:00;ORDER_SEND_ATTEMPT;EURUSD;5;101111;1.17801;1.17803;2;0;0;0.01;1.17803;0.00000;0.00000;5;0;0;0.00;0.00;;;EURUSD-Euro Scalper-0
 2025.07.07 02:00:00;ORDER_SEND_RESULT;EURUSD;5;101111;1.17801;1.17803;2;1;0;0.01;1.17803;0.00000;0.00000;5;1;0;-0.04;0.00;;;EURUSD-Euro Scalper-0
 2025.07.07  02:00:00;BASKET_TP_ASSIGN;EURUSD;5;101111;1.17801;1.17803;2;0;-1;0.00;0.00000;0.00000;0.00000;0;1;0;-0.04;0.00;;;vwap=1.17803; basket_tp=1.17833
