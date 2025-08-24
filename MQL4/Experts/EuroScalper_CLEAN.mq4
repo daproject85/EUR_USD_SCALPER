@@ -1,5 +1,5 @@
-// EuroScalper_CLEAN.mq4 (scaffold)
-// Interface-only: externs + logger includes + lifecycle; no trading logic yet.
+// EuroScalper_CLEAN.mq4 (Step 2)
+// Interface + logger + session/open-range gating (no trading logic yet)
 #property strict
 #include <EuroScalper_Logging_Config.mqh>
 #include <ES_Logger.mqh>
@@ -31,6 +31,53 @@ extern bool invisible_mode = true;
 extern double OpenRangePips = 1;
 extern double MaxDailyRange = 20000;
 
+// ---- Session & Open-Range Gating ----
+bool ES_CanTrade_Session()
+{
+   int hour = TimeHour(TimeCurrent());
+   if(Open_Hour > 0 && hour < Open_Hour)  return(false);
+   if(Close_Hour > 0 && hour >= Close_Hour) return(false);
+
+   int dow = DayOfWeek(); // 0=Sun … 4=Thu, 5=Fri
+   // Thursday rules
+   if(!TradeOnThursday && dow==4) return(false);
+   if( TradeOnThursday && dow==4 && Thursday_Hour > 0 && hour >= Thursday_Hour) return(false);
+   // Friday rules
+   if(!TradeOnFriday && dow==5) return(false);
+   if( TradeOnFriday && dow==5 && Friday_Hour > 0 && hour >= Friday_Hour) return(false);
+
+   return(true);
+}
+
+bool ES_CanTrade_OpenRange()
+{
+   // Daily open-range & max-range filter
+   double dOpen = iOpen(_Symbol, PERIOD_D1, 0);
+   double dHigh = iHigh(_Symbol, PERIOD_D1, 0);
+   double dLow  = iLow (_Symbol, PERIOD_D1, 0);
+   double mid   = (Bid + Ask) * 0.5;
+
+   double distFromOpenPts = MathAbs(mid - dOpen) / Point;
+   double dayRangePts     = (dHigh - dLow) / Point;
+
+   // Sideways filter: too close to daily open
+   if(Filter_Sideway && distFromOpenPts < OpenRangePips)
+      return(false);
+
+   // Excessive daily range filter
+   if(dayRangePts > MaxDailyRange)
+      return(false);
+
+   return(true);
+}
+
+bool ES_CanTradeNow()
+{
+   if(!ES_CanTrade_Session())   return(false);
+   if(!ES_CanTrade_OpenRange()) return(false);
+   return(true);
+}
+
 int init()
 {
    ES_Log_OnInit();
@@ -41,7 +88,11 @@ int init()
 
 int start()
 {
-   // TODO: Port trading logic step-by-step with parity checks.
+   // Step 2: gating only (no trading logic yet)
+   if(!ES_CanTradeNow())
+      return(0);
+
+   // TODO: Step 3 will add first-entry logic here.
    return(0);
 }
 
