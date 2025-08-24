@@ -1,0 +1,28 @@
+# EuroScalper Internal Variable Map (decompiled v1.10 → log terms)
+
+- Magic
+  - `I_i_0` → per-symbol magic initializer
+  - `I_i_71` → active magic used for all operations (copy of `I_i_0`)
+- Basket TP / VWAP
+  - `I_d_48` → VWAP of open basket
+  - `I_d_80` → Basket TP price (BUY: VWAP + TPpts; SELL: VWAP - TPpts)
+  - `I_b_16` → Flag that TP needs (re)assignment this cycle
+  - `I_b_17` → Computed TP side ready to apply
+- Grid / Lots
+  - `I_d_46` → TakeProfit distance in points
+  - `I_d_47` → Step size in points
+  - `I_d_45` → Martingale factor (if mode 1) or `Lot` (if additive mode 2)
+  - `I_d_69` → Next order lot size
+  - `I_i_76` → Order-add state (-2 = flat / first-entry ready)
+  - `I_i_77` → Mode selector (1=multiplicative, else additive)
+  - `I_i_88` → Current number of open orders (basket size)
+  - `I_b_18` → Has BUY basket
+  - `I_b_19` → Has SELL basket
+  - `I_b_22` → Grid trigger armed
+  - `I_d_63` → Last BUY price
+  - `I_d_64` → Last SELL price
+- Risk / Targets
+  - `Use_Daily_Target`, `Daily_Target`
+  - `Hidden_TP`, `Hiden_TP`
+  - `UseEquityStop`, `TotalEquityRisk`
+  - Equity stop internals: `I_d_57` (peak equity tracker), `I_d_58` (current equity snapshot), `G_d_55` (abs DD), `G_d_56` (risk fraction)
