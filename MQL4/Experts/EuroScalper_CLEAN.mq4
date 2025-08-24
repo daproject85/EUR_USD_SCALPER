@@ -1,5 +1,5 @@
-// EuroScalper_CLEAN.mq4 (Step 2)
-// Interface + logger + session/open-range gating (no trading logic yet)
+// EuroScalper_CLEAN.mq4 (Step 3)
+// Externs + logger + session/open-range gating + first-entry logic
 #property strict
 #include <EuroScalper_Logging_Config.mqh>
 #include <ES_Logger.mqh>
@@ -78,21 +78,67 @@ bool ES_CanTradeNow()
    return(true);
 }
 
+// ---- First Entry Logic ----
+double ES_GetFirstLotSize()
+{
+   return(Lot);
+}
+
+int ES_OpenFirstTrade()
+{
+   double lots = ES_GetFirstLotSize();
+   int ticket  = -1;
+   int cmd     = -1;
+   double price = 0;
+   int slippage = 3;
+
+   if(Close[2] > Close[1])
+   {
+      cmd = OP_SELL;
+      price = Bid;
+   }
+   else
+   {
+      cmd = OP_BUY;
+      price = Ask;
+   }
+
+   // Log before sending
+   ES_Log_OrderSend_Attempt(cmd, lots, price, 0, 0);
+
+   ticket = OrderSend(Symbol(), cmd, lots, price, slippage, 0, 0, "FirstEntry", 0, 0, clrNONE);
+
+   // Log result
+   ES_Log_OrderSend_Result(ticket);
+
+   if(ticket > 0)
+   {
+      // Basket TP assignment placeholder (will be expanded later)
+      ES_Log_BasketTP_Assign(0, 0);
+   }
+
+   return(ticket);
+}
+
 int init()
 {
    ES_Log_OnInit();
-   // Context will be updated to true magic once logic is ported
    ES_Log_SetContext(_Symbol, Period(), 0);
    return(0);
 }
 
 int start()
 {
-   // Step 2: gating only (no trading logic yet)
+   // Step 3: gating + first entry
    if(!ES_CanTradeNow())
       return(0);
 
-   // TODO: Step 3 will add first-entry logic here.
+   // Only place trade if none exists
+   if(OrdersTotal() == 0)
+   {
+      ES_OpenFirstTrade();
+   }
+
    return(0);
 }
 
