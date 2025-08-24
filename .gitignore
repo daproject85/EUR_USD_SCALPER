@@ -30,6 +30,10 @@ MQL4/Include/*
 !repo/sample_logs/
 !repo/sample_logs/**
 
+# Allow preset files to be committed
+!repo/presets/
+!repo/presets/**
+
 # Explicitly ignore volatile MT4 runtime stuff
 history/
 logs/
@@ -47,3 +51,4 @@ MQL4/Presets/
 MQL4/Projects/
 MQL4/Scripts/
 MQL4/Shared Projects/
+repo/presets/.DS_Store
