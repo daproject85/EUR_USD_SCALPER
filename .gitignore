@@ -41,3 +41,7 @@ MQL4/Presets/
 MQL4/Projects/
 MQL4/Scripts/
 MQL4/Shared Projects/
+
+# Allow sample logs to be committed
+!repo/sample_logs/
+repo/sample_logs/**
