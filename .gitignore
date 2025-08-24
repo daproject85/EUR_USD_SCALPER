@@ -44,4 +44,5 @@ MQL4/Shared Projects/
 
 # Allow sample logs to be committed
 !repo/sample_logs/
-repo/sample_logs/**
+!repo/sample_logs/**
+
