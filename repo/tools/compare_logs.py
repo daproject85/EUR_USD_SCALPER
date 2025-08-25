@@ -173,18 +173,45 @@ def _compute_diff_widths(diff_records):
     cand_w = max(9, max((len(str(v[1])) for rec in diff_records for v in rec["diffs"].values()), default=0))
     return col_w, base_w, cand_w
 
+
 def _print_diff_section(key_cols, diff_records, file=sys.stdout):
+    """
+    Print a single aligned table for all diffs with columns:
+    [DIFF]  timestamp  event  ticket  order_type  baseline  candidate
+    Each differing column expands into its own row where baseline/candidate are "col=value".
+    """
     if not diff_records:
         return
+
+    # Compute key widths from all keys in diffs
     keys_only = [rec["key"] for rec in diff_records]
-    key_widths = _compute_widths(key_cols, keys_only)
-    col_w, base_w, cand_w = _compute_diff_widths(diff_records)
+    key_widths = _compute_widths(key_cols, keys_only, include_counts=False)
+
+    # Build flattened rows: one output row per differing column
+    rows = []
     for rec in diff_records:
-        print(_fmt_key_row("[DIFF]", key_cols, key_widths, rec["key"]), file=file)
-        print(" " * (PREFIX_W + 1) + "column".ljust(col_w) + "  " + "baseline".ljust(base_w) + "  " + "candidate".ljust(cand_w), file=file)
+        k = rec["key"]
         for col, (b, c) in rec["diffs"].items():
-            print(" " * (PREFIX_W + 1) + str(col).ljust(col_w) + "  " + str(b).ljust(base_w) + "  " + str(c).ljust(cand_w), file=file)
-        print("", file=file)
+            rows.append((k, f"{col}={b}", f"{col}={c}"))
+
+    # Determine widths for baseline/candidate columns
+    base_w = max(len("baseline"), max((len(str(r[1])) for r in rows), default=0)) + 2
+    cand_w = max(len("candidate"), max((len(str(r[2])) for r in rows), default=0)) + 2
+
+    # Header (one time)
+    hdr = [_fmt_prefix("[DIFF]")]
+    for name in key_cols:
+        hdr.append(_justify(name, _display_name(name), key_widths))
+    hdr.append("baseline".ljust(base_w))
+    hdr.append("candidate".ljust(cand_w))
+    print("  ".join(hdr), file=file)
+
+    # Body rows
+    for (k, btxt, ctxt) in rows:
+        line = _fmt_key_row("[   ]", key_cols, key_widths, k)
+        line += "  " + btxt.ljust(base_w) + "  " + ctxt.ljust(cand_w)
+        print(line, file=file)
+
 
 # -------------------------------
 # Main
