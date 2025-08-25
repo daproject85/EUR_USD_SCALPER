@@ -24,10 +24,10 @@ static string ES_OrderTypeToReadable(const int op)
 
 static string ES_OrderTypeCell(const int op)
 {
-#if ES_LOG_ORDER_TYPE_READABLE
+#ifdef ES_LOG_ORDER_TYPE_READABLE
    return ES_OrderTypeToReadable(op);
 #else
-   return ES_OrderTypeCell(op);
+   return IntegerToString(op);
 #endif
 }
 
