@@ -78,6 +78,78 @@ def _print_diff_section(key_cols, diff_records, file=sys.stdout):
         print("", file=file)  # blank line between diff groups
 
 
+
+NUMERIC_COLS = {"ticket", "baseline", "candidate"}
+
+def _display_name(name):
+    return "order_type" if name == "op" else name
+
+def _stringify_key(key_tuple):
+    return tuple("" if v is None else str(v) for v in key_tuple)
+
+def _compute_widths(key_cols, keys_list, include_counts=False):
+    widths = {name: max(len(_display_name(name)), 2) for name in key_cols}
+    for key in keys_list:
+        for i, name in enumerate(key_cols):
+            val = "" if i >= len(key) else (key[i] if key[i] is not None else "")
+            widths[name] = max(widths[name], len(str(val)))
+    if include_counts:
+        widths["baseline"] = max(len("baseline"), 1)
+        widths["candidate"] = max(len("candidate"), 1)
+    for k in widths:
+        widths[k] += 2
+    return widths
+
+def _justify(name, text, widths):
+    s = "" if text is None else str(text)
+    if name in NUMERIC_COLS:
+        return s.rjust(widths[name])
+    return s.ljust(widths[name])
+
+def _fmt_key_row(prefix, key_cols, widths, key):
+    parts = [prefix]
+    for i, name in enumerate(key_cols):
+        val = "" if i >= len(key) else (key[i] if key[i] is not None else "")
+        parts.append(_justify(name, val, widths))
+    return "  ".join(parts)
+
+def _print_rowcount_table(key_cols, rowcount_records, file=sys.stdout):
+    if not rowcount_records:
+        return
+    keys_only = [rec["key"] for rec in rowcount_records]
+    widths = _compute_widths(key_cols, keys_only, include_counts=True)
+    hdr = ["[ROWCOUNT]"]
+    for name in key_cols:
+        hdr.append(_justify(name, _display_name(name), widths))
+    for name in ("baseline", "candidate"):
+        hdr.append(_justify(name, name, widths))
+    print("  ".join(hdr), file=file)
+    for rec in rowcount_records:
+        line = _fmt_key_row("[   ]", key_cols, widths, rec["key"])
+        line += "  " + _justify("baseline", rec["baseline"], widths)
+        line += "  " + _justify("candidate", rec["candidate"], widths)
+        print(line, file=file)
+
+def _compute_diff_widths(diff_records):
+    col_w = max(6, max((len(str(col)) for rec in diff_records for col in rec["diffs"].keys()), default=0))
+    base_w = max(8, max((len(str(v[0])) for rec in diff_records for v in rec["diffs"].values()), default=0))
+    cand_w = max(9, max((len(str(v[1])) for rec in diff_records for v in rec["diffs"].values()), default=0))
+    return col_w, base_w, cand_w
+
+def _print_diff_section(key_cols, diff_records, file=sys.stdout):
+    if not diff_records:
+        return
+    keys_only = [rec["key"] for rec in diff_records]
+    key_widths = _compute_widths(key_cols, keys_only)
+    col_w, base_w, cand_w = _compute_diff_widths(diff_records)
+    for rec in diff_records:
+        print(_fmt_key_row("[DIFF]", key_cols, key_widths, rec["key"]), file=file)
+        print("       " + "column".ljust(col_w) + "  " + "baseline".ljust(base_w) + "  " + "candidate".ljust(cand_w), file=file)
+        for col, (b, c) in rec["diffs"].items():
+            print("       " + str(col).ljust(col_w) + "  " + str(b).ljust(base_w) + "  " + str(c).ljust(cand_w), file=file)
+        print("", file=file)
+
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--baseline", required=True)
