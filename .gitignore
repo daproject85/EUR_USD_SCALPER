@@ -58,3 +58,4 @@ repo/presets/.DS_Store
 # Runs: keep manifests and run metadata
 !repo/runs/
 !repo/runs/**
+/repo/sample_logs

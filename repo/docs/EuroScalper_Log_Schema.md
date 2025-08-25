@@ -1,3 +1,5 @@
+timestamp;event;symbol;period;magic;bid;ask;spread;ticket;op;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
+
 # EuroScalper Log Schema (v1.0)
 
 CSV written to `MQL4/Files/EuroScalperLogs/` with file name:
