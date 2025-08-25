@@ -21,6 +21,8 @@ def parse_args():
                    help="Fail if row counts do not match after alignment")
     p.add_argument("--delimiter", default=None,
                    help="CSV delimiter override (default: auto-detect; if fails, falls back to ',')")
+    p.add_argument("--no-rowcount", action="store_true",
+                   help="Suppress printing of ROWCOUNT differences")
     return p.parse_args()
 
 def read_csv(path, delimiter_override=None):
@@ -31,18 +33,17 @@ def read_csv(path, delimiter_override=None):
         remainder = f.read()
     if delimiter_override:
         delimiter = delimiter_override
-        print(f"[info] Using explicit delimiter: {delimiter}")
+        #print(f"[info] Using explicit delimiter: {delimiter}")
     else:
         try:
             dialect = csv.Sniffer().sniff(sample)
             delimiter = dialect.delimiter
-            print(f"[info] Auto-detected delimiter: {delimiter}")
+           # print(f"[info] Auto-detected delimiter: {delimiter}")
         except Exception:
             delimiter = ','
             print(f"[warn] Could not auto-detect delimiter. Falling back to ','")
     reader = csv.reader(io.StringIO(sample + remainder), delimiter=delimiter)
     rows = list(reader)
-    # Strip BOM from first header field if present
     if rows and rows[0]:
         rows[0][0] = rows[0][0].lstrip("\ufeff")
     header = rows[0]
@@ -113,20 +114,17 @@ def compare_rows(b_row, c_row, header, ignore_set,
 NUMERIC_COLS = {"ticket", "baseline", "candidate"}
 
 def _display_name(name):
-    # Show 'order_type' instead of 'op' in headers (values remain untouched)
     return "order_type" if name == "op" else name
 
 def _stringify_key(key_tuple):
     return tuple("" if v is None else str(v) for v in key_tuple)
 
-# Fixed-width prefix so header and rows align (e.g., "[ROWCOUNT]" vs "[   ]")
 PREFIX_W = max(len("[ROWCOUNT]"), len("[DIFF]"), len("[   ]"))
 
 def _fmt_prefix(text):
     return (text or "").ljust(PREFIX_W)
 
 def _compute_widths(key_cols, keys_list, include_counts=False):
-    # one width per column based on header display + all values (+2 pad)
     widths = {name: max(len(_display_name(name)), 2) for name in key_cols}
     for key in keys_list:
         for i, name in enumerate(key_cols):
@@ -157,16 +155,12 @@ def _print_rowcount_table(key_cols, rowcount_records, file=sys.stdout):
         return
     keys_only = [rec["key"] for rec in rowcount_records]
     widths = _compute_widths(key_cols, keys_only, include_counts=True)
-
-    # Header row (labels use same alignment rule as data)
     hdr = [_fmt_prefix("[ROWCOUNT]")]
     for name in key_cols:
         hdr.append(_justify(name, _display_name(name), widths))
     for name in ("baseline", "candidate"):
         hdr.append(_justify(name, name, widths))
     print("  ".join(hdr), file=file)
-
-    # Rows
     for rec in rowcount_records:
         line = _fmt_key_row("[   ]", key_cols, widths, rec["key"])
         line += "  " + _justify("baseline", rec["baseline"], widths)
@@ -229,7 +223,6 @@ def main():
     mismatches = 0
     shown = 0
 
-    # Collect records first for formatting
     rowcount_records = []
     diff_records = []
 
@@ -242,7 +235,6 @@ def main():
             if args.strict_rows:
                 mismatches += 1
                 continue
-        # Compare up to min length
         for i in range(min(len(b_list), len(c_list))):
             total += 1
             diffs = compare_rows(b_list[i], c_list[i], b_header, ignore_set,
@@ -254,7 +246,7 @@ def main():
                     shown += 1
 
     # Pretty-print
-    if rowcount_records:
+    if rowcount_records and not args.no_rowcount:
         _print_rowcount_table(key_cols, rowcount_records)
         print("")
     if diff_records:
