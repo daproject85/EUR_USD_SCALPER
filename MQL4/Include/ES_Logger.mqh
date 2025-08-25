@@ -5,7 +5,7 @@
 // Set to true to log human-readable order type names ("BUY","SELL","BUY LIMIT",...)
 // Default false to preserve numeric parity with legacy logs.
 #ifndef ES_LOG_ORDER_TYPE_READABLE
-#define ES_LOG_ORDER_TYPE_READABLE false
+#define ES_LOG_ORDER_TYPE_READABLE true
 #endif
 
 static string ES_OrderTypeToReadable(const int op)
