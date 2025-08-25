@@ -5,13 +5,17 @@ import argparse, csv, io, sys, os
 def _stringify_key(key_tuple):
     return tuple("" if v is None else str(v) for v in key_tuple)
 
+
 def _compute_widths(key_cols, keys_list):
-    # widths for each key column (by name)
+    # widths for each key column (by internal name), with extra padding for readability
     widths = {name: max(len(name), 2) for name in key_cols}
     for key in keys_list:
         for i, name in enumerate(key_cols):
             val = "" if i >= len(key) else (key[i] if key[i] is not None else "")
             widths[name] = max(widths[name], len(str(val)))
+    # add a bit of breathing room between columns
+    for name in widths:
+        widths[name] += 3
     return widths
 
 def _fmt_key_row(prefix, key_cols, widths, key):
@@ -22,18 +26,30 @@ def _fmt_key_row(prefix, key_cols, widths, key):
         parts.append(sval.ljust(widths[name]))
     return "  ".join(parts)
 
+
 def _print_rowcount_table(key_cols, rowcount_records, file=sys.stdout):
     if not rowcount_records:
         return
     keys_only = [rec["key"] for rec in rowcount_records]
     widths = _compute_widths(key_cols, keys_only)
-    # header
-    hdr = ["[ROWCOUNT]"] + [name.ljust(widths[name]) for name in key_cols] + ["baseline", "candidate"]
+
+    # dynamic widths for the count columns
+    baseline_w = max(len("baseline"), max((len(str(rec["baseline"])) for rec in rowcount_records), default=1)) + 2
+    candidate_w = max(len("candidate"), max((len(str(rec["candidate"])) for rec in rowcount_records), default=1)) + 2
+
+    # header: rename 'op' -> 'order_type' only for display
+    hdr_cols = []
+    for name in key_cols:
+        disp = "order_type" if name == "op" else name
+        hdr_cols.append(disp.ljust(widths[name]))
+    hdr = ["[ROWCOUNT]"] + hdr_cols + ["baseline".ljust(baseline_w), "candidate".ljust(candidate_w)]
     print("  ".join(hdr), file=file)
+
+    # rows
     for rec in rowcount_records:
         key = rec["key"]
         line = _fmt_key_row("[   ]", key_cols, widths, key)
-        line += "  " + str(rec["baseline"]).rjust(8) + "  " + str(rec["candidate"]).rjust(9)
+        line += "  " + str(rec["baseline"]).rjust(baseline_w) + "  " + str(rec["candidate"]).rjust(candidate_w)
         print(line, file=file)
 
 def _compute_diff_widths(diff_records):
@@ -43,6 +59,7 @@ def _compute_diff_widths(diff_records):
     cand_w = max(9, max((len(str(v[1])) for rec in diff_records for v in rec["diffs"].values()), default=0))
     return col_w, base_w, cand_w
 
+
 def _print_diff_section(key_cols, diff_records, file=sys.stdout):
     if not diff_records:
         return
@@ -51,7 +68,7 @@ def _print_diff_section(key_cols, diff_records, file=sys.stdout):
     key_widths = _compute_widths(key_cols, keys_only)
     col_w, base_w, cand_w = _compute_diff_widths(diff_records)
     for rec in diff_records:
-        # key header row
+        # show key row (values), same spacing
         print(_fmt_key_row("[DIFF]", key_cols, key_widths, rec["key"]), file=file)
         # sub-table header
         print("       " + "column".ljust(col_w) + "  " + "baseline".ljust(base_w) + "  " + "candidate".ljust(cand_w), file=file)
