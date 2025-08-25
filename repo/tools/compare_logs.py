@@ -1,6 +1,66 @@
 #!/usr/bin/env python3
 import argparse, csv, io, sys, os
 
+
+def _stringify_key(key_tuple):
+    return tuple("" if v is None else str(v) for v in key_tuple)
+
+def _compute_widths(key_cols, keys_list):
+    # widths for each key column (by name)
+    widths = {name: max(len(name), 2) for name in key_cols}
+    for key in keys_list:
+        for i, name in enumerate(key_cols):
+            val = "" if i >= len(key) else (key[i] if key[i] is not None else "")
+            widths[name] = max(widths[name], len(str(val)))
+    return widths
+
+def _fmt_key_row(prefix, key_cols, widths, key):
+    parts = [prefix]
+    for i, name in enumerate(key_cols):
+        val = "" if i >= len(key) else (key[i] if key[i] is not None else "")
+        sval = str(val)
+        parts.append(sval.ljust(widths[name]))
+    return "  ".join(parts)
+
+def _print_rowcount_table(key_cols, rowcount_records, file=sys.stdout):
+    if not rowcount_records:
+        return
+    keys_only = [rec["key"] for rec in rowcount_records]
+    widths = _compute_widths(key_cols, keys_only)
+    # header
+    hdr = ["[ROWCOUNT]"] + [name.ljust(widths[name]) for name in key_cols] + ["baseline", "candidate"]
+    print("  ".join(hdr), file=file)
+    for rec in rowcount_records:
+        key = rec["key"]
+        line = _fmt_key_row("[   ]", key_cols, widths, key)
+        line += "  " + str(rec["baseline"]).rjust(8) + "  " + str(rec["candidate"]).rjust(9)
+        print(line, file=file)
+
+def _compute_diff_widths(diff_records):
+    # compute widths for the diff table (column name, baseline, candidate)
+    col_w = max(6, max((len(col) for rec in diff_records for col in rec["diffs"].keys()), default=0))
+    base_w = max(8, max((len(str(v[0])) for rec in diff_records for v in rec["diffs"].values()), default=0))
+    cand_w = max(9, max((len(str(v[1])) for rec in diff_records for v in rec["diffs"].values()), default=0))
+    return col_w, base_w, cand_w
+
+def _print_diff_section(key_cols, diff_records, file=sys.stdout):
+    if not diff_records:
+        return
+    # widths for key columns (for the header rows)
+    keys_only = [rec["key"] for rec in diff_records]
+    key_widths = _compute_widths(key_cols, keys_only)
+    col_w, base_w, cand_w = _compute_diff_widths(diff_records)
+    for rec in diff_records:
+        # key header row
+        print(_fmt_key_row("[DIFF]", key_cols, key_widths, rec["key"]), file=file)
+        # sub-table header
+        print("       " + "column".ljust(col_w) + "  " + "baseline".ljust(base_w) + "  " + "candidate".ljust(cand_w), file=file)
+        # rows
+        for col, (b, c) in rec["diffs"].items():
+            print("       " + str(col).ljust(col_w) + "  " + str(b).ljust(base_w) + "  " + str(c).ljust(cand_w), file=file)
+        print("", file=file)  # blank line between diff groups
+
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--baseline", required=True)
@@ -135,15 +195,20 @@ def main():
     mismatches = 0
     shown = 0
 
+    # Collect records first for formatting
+    rowcount_records = []
+    diff_records = []
+
     all_keys = sorted(set(b_map.keys()) | set(c_map.keys()))
     for k in all_keys:
         b_list = b_map.get(k, [])
         c_list = c_map.get(k, [])
         if len(b_list) != len(c_list):
-            print(f"[ROWCOUNT] key={k} baseline={len(b_list)} candidate={len(c_list)}")
+            rowcount_records.append({"key": _stringify_key(k), "baseline": len(b_list), "candidate": len(c_list)})
             if args.strict_rows:
                 mismatches += 1
                 continue
+        # Compare aligned rows up to min length
         for i in range(min(len(b_list), len(c_list))):
             total += 1
             diffs = compare_rows(b_list[i], c_list[i], b_header, ignore_set,
@@ -151,8 +216,15 @@ def main():
             if diffs:
                 mismatches += 1
                 if shown < args.max_diffs:
-                    print(f"[DIFF] key={k} -> {diffs}")
+                    diff_records.append({"key": _stringify_key(k), "diffs": diffs})
                     shown += 1
+
+    # Pretty-print
+    if rowcount_records:
+        _print_rowcount_table(key_cols, rowcount_records)
+        print("")
+    if diff_records:
+        _print_diff_section(key_cols, diff_records)
 
     print(f"\nSUMMARY: compared_pairs={total} mismatches={mismatches}")
     if mismatches == 0:
