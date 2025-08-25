@@ -1,6 +1,36 @@
 // ES_Logger.mqh - logging & wrappers for EuroScalper
 #property strict
 
+// ===== Order type output mode =====
+// Set to true to log human-readable order type names ("BUY","SELL","BUY LIMIT",...)
+// Default false to preserve numeric parity with legacy logs.
+#ifndef ES_LOG_ORDER_TYPE_READABLE
+#define ES_LOG_ORDER_TYPE_READABLE false
+#endif
+
+static string ES_OrderTypeToReadable(const int op)
+{
+   switch(op)
+   {
+      case OP_BUY:       return "BUY";
+      case OP_SELL:      return "SELL";
+      case OP_BUYLIMIT:  return "BUY LIMIT";
+      case OP_SELLLIMIT: return "SELL LIMIT";
+      case OP_BUYSTOP:   return "BUY STOP";
+      case OP_SELLSTOP:  return "SELL STOP";
+      default:           return "-1";
+   }
+}
+
+static string ES_OrderTypeCell(const int op)
+{
+#if ES_LOG_ORDER_TYPE_READABLE
+   return ES_OrderTypeToReadable(op);
+#else
+   return ES_OrderTypeCell(op);
+#endif
+}
+
 #include <EuroScalper_Logging_Config.mqh>
 
 int     ES_log_handle = INVALID_HANDLE;
@@ -95,7 +125,7 @@ void ES_Log_Write(string event, int ticket, int op, double lots, double price, d
    FileWrite(ES_log_handle,
       ES_TimeToStr(TimeCurrent()), event, ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
       DoubleToString(bid, _Digits), DoubleToString(ask, _Digits), DoubleToString(spr, 0),
-      IntegerToString(ticket), IntegerToString(op), DoubleToString(lots, 2), DoubleToString(price, _Digits), DoubleToString(sl, _Digits), DoubleToString(tp, _Digits), IntegerToString(slip),
+      IntegerToString(ticket), ES_OrderTypeCell(op), DoubleToString(lots, 2), DoubleToString(price, _Digits), DoubleToString(sl, _Digits), DoubleToString(tp, _Digits), IntegerToString(slip),
       IntegerToString(result_code), IntegerToString(err),
       DoubleToString(floating, 2), DoubleToString(closed, 2),
       "", "", // vwap, basket_tp (unused here)
