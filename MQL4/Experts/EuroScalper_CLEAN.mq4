@@ -1,10 +1,9 @@
-// EuroScalper_CLEAN.mq4 (Step 3 - fixed)
+// EuroScalper_CLEAN.mq4 (Step 3 - parity fix: slippage=5 & magic filename)
 // Externs + logger + session/open-range gating + first-entry logic
 #property strict
 #include <EuroScalper_Logging_Config.mqh>
 #include <ES_Logger.mqh>
 
-// ---- Externs (kept minimal and consistent with Step 2 used earlier) ----
 extern string Minimal_Deposit = "$200";
 extern string Time_Frame = "Time Frame M1";
 extern string Pairs = "EurUsd";
@@ -76,7 +75,6 @@ bool ES_CanTradeNow()
 // ---- First Entry Logic ----
 double ES_GetFirstLotSize()
 {
-   // Future: apply LotMultiplikator logic when we port averaging/grid
    return(Lot);
 }
 
@@ -85,53 +83,37 @@ int ES_OpenFirstTrade()
    double lots = ES_GetFirstLotSize();
    int    cmd  = -1;
    double price = 0;
-   int    slippage = 3;
-   int    magic = 1; // per user request: hard-coded magic=1 (no extern)
+   const int SLIPPAGE = 5; // baseline parity
+   int    magic = 1;       // hard-coded as requested
 
-   // Simple candle-delta entry: if Close[2] > Close[1] → SELL, else BUY
-   if(Close[2] > Close[1])
-   {
-      cmd = OP_SELL;
-      price = Bid;
-   }
-   else
-   {
-      cmd = OP_BUY;
-      price = Ask;
-   }
+   if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
+   else                    { cmd = OP_BUY;  price = Ask; }
 
-   // Use logger's wrapper: this logs both attempt and result internally
-   int ticket = ES_Log_OrderSend(Symbol(), cmd, lots, price, slippage,
+   int ticket = ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
                                  0, 0, "FirstEntry", magic, 0, clrNONE);
 
    if(ticket > 0)
    {
-      // Placeholder — will compute real VWAP & basket TP in later steps
-      ES_Log_Event_TPAssign(0, 0);
+      ES_Log_Event_TPAssign(0, 0); // placeholder; real VWAP/TP later
    }
-
    return(ticket);
 }
 
 int init()
 {
-   ES_Log_OnInit();
-   // Set explicit magic to 1 in the logging context (per user request)
+   // Set context BEFORE opening the log so magic appears in filename
    ES_Log_SetContext(_Symbol, Period(), 1);
+   ES_Log_OnInit();
    return(0);
 }
 
 int start()
 {
-   // Step 3: gating + first entry
    if(!ES_CanTradeNow())
       return(0);
 
-   // Only open a first trade if none exist (grid/averaging in later steps)
    if(OrdersTotal() == 0)
-   {
       ES_OpenFirstTrade();
-   }
 
    return(0);
 }
