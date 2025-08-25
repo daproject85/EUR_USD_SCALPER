@@ -1,14 +1,8 @@
 // ES_Logger.mqh - logging & wrappers for EuroScalper
 #property strict
 
-// ===== Order type output mode =====
-// Set to true to log human-readable order type names ("BUY","SELL","BUY LIMIT",...)
-// Default false to preserve numeric parity with legacy logs.
-#ifndef ES_LOG_ORDER_TYPE_READABLE
-#define ES_LOG_ORDER_TYPE_READABLE true
-#endif
-
-static string ES_OrderTypeToReadable(const int op)
+// ===== Order type (human-readable) =====
+string ES_OrderTypeToReadable(const int op)
 {
    switch(op)
    {
@@ -22,13 +16,9 @@ static string ES_OrderTypeToReadable(const int op)
    }
 }
 
-static string ES_OrderTypeCell(const int op)
+string ES_OrderTypeCell(const int op)
 {
-#ifdef ES_LOG_ORDER_TYPE_READABLE
    return ES_OrderTypeToReadable(op);
-#else
-   return IntegerToString(op);
-#endif
 }
 
 #include <EuroScalper_Logging_Config.mqh>
