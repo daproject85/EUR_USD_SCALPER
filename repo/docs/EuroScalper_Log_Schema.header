@@ -1,0 +1,1 @@
+timestamp;event;symbol;period;magic;bid;ask;spread;ticket;order_type;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
