@@ -90,7 +90,7 @@ int ES_OpenFirstTrade()
    else                    { cmd = OP_BUY;  price = Ask; }
 
    int ticket = ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
-                                 0, 0, "FirstEntry", magic, 0, clrNONE);
+                                 0, 0, Symbol()+"-Euro Scalper-0", magic, 0, clrNONE);
 
    if(ticket > 0)
    {
