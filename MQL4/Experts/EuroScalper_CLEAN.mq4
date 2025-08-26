@@ -106,13 +106,12 @@ int ES_OpenFirstTrade()
    int    cmd  = -1;
    double price = 0;
    const int SLIPPAGE = 5; // baseline parity
-   int    magic = 1;       // hard-coded as requested
-
+   
    if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
    else                    { cmd = OP_BUY;  price = Ask; }
 
    int ticket = (int)ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
-                                 0, 0, StringConcatenate(Symbol(),"-Euro Scalper-0"), magic, 0, clrNONE);
+                                 0, 0, StringConcatenate(Symbol(),"-Euro Scalper-0"), Magic, 0, clrNONE);
 
    if(ticket > 0)
    {
@@ -130,7 +129,7 @@ double vwap = ES_ComputeVWAP(magic);
 int init()
 {
    // Set context BEFORE opening the log so magic appears in filename
-   ES_Log_SetContext(_Symbol, Period(), 1);
+   ES_Log_SetContext(_Symbol, Period(), Magic);
    ES_Log_OnInit();
    return(0);
 }
