@@ -81,7 +81,7 @@ double ES_GetFirstLotSize()
    return(Lot);
 }
 
-double ES_ComputeVWAP(const int Magic)
+double ES_ComputeVWAP(const int magicNumber)
 {
    double sumLots = 0.0;
    double sumPx   = 0.0;
@@ -90,7 +90,7 @@ double ES_ComputeVWAP(const int Magic)
    {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
       if(OrderSymbol() != Symbol()) continue;
-      if(OrderMagicNumber() != Magic) continue;
+      if(OrderMagicNumber() != magicNumber) continue;
       int t = OrderType();
       if(t!=OP_BUY && t!=OP_SELL) continue; // market positions only
       double lots = OrderLots();
