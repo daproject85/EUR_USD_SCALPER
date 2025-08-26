@@ -30,24 +30,30 @@ string ES_OrderTypeCell(const int op)
 
 #include <EuroScalper_Logging_Config.mqh>
 
-int     ES_log_handle = INVALID_HANDLE;
-string  ES_log_path   = "";
-string  ES_log_symbol = "";
-int     ES_log_period = 0;
-int     ES_log_magic  = 0;
-bool    ES_log_ready  = false;
+int     ES_log_handle    = INVALID_HANDLE;
+string  ES_log_path      = "";
+string  ES_log_symbol    = "";
+int     ES_log_period    = 0;
+int     ES_log_magic     = 0;
+bool    ES_log_ready     = false;
+string  ES_log_start_dt  = "";  // normalized start timestamp for filename
+string  ES_log_end_dt    = "";  // normalized end timestamp for filename
+bool    ES_log_has_start = false;
 
 string ES_TimeToStr(datetime t) { return TimeToString(t, TIME_DATE|TIME_SECONDS); }
 
 void ES_Log_OpenFile() {
    if(!ES_Log_Enable) return;
-   // Construct path: MQL4/Files/EuroScalperLogs/<Symbol>_<Magic>_<YYYYMMDD_HHMMSS>.csv
+   // Construct path: initial placeholder name
    string dt = TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS);
    // Normalize filename: replace ':' and ' ' with '_'
    for(int i=0; i<StringLen(dt); i++) {
       ushort ch = StringGetCharacter(dt, i);
       if(ch==':' || ch==' ') dt = StringSubstr(dt,0,i) + "_" + StringSubstr(dt,i+1);
    }
+   ES_log_start_dt  = dt;   // will be replaced by first log event time
+   ES_log_end_dt    = dt;
+   ES_log_has_start = false;
    string fname = "EuroScalperLogs/" + ES_log_symbol + "_" + dt + "_" + ES_Log_RunTag + ".csv";
    ES_log_path = fname;
    int flags = FILE_CSV|FILE_WRITE|FILE_READ|FILE_SHARE_WRITE|FILE_SHARE_READ;
@@ -79,6 +85,11 @@ void ES_Log_OnDeinit() {
       FileFlush(ES_log_handle);
       FileClose(ES_log_handle);
       ES_log_handle = INVALID_HANDLE;
+      // Append end timestamp to filename captured from last logged event
+      string new_name = "EuroScalperLogs/" + ES_log_symbol + "_" + ES_log_start_dt + "_TO_" + ES_log_end_dt + "_" + ES_Log_RunTag + ".csv";
+      FileCopy(ES_log_path, new_name);
+      FileDelete(ES_log_path);
+      ES_log_path = new_name;
    }
 }
 
@@ -119,8 +130,10 @@ void ES_Log_Write(string event, int ticket, int op, double lots, double price, d
    double floating = ES_CurrentFloatingPL();
    double closed   = ES_ClosedPL_Today();
    // We don't recompute VWAP/basket_tp here; they are optionally provided via dedicated events
+   datetime now = TimeCurrent();
+   string ts = ES_TimeToStr(now);
    FileWrite(ES_log_handle,
-      ES_TimeToStr(TimeCurrent()), event, ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
+      ts, event, ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
       DoubleToString(bid, _Digits), DoubleToString(ask, _Digits), DoubleToString(spr, 0),
       IntegerToString(ticket), ES_OrderTypeCell(op), DoubleToString(lots, 2), DoubleToString(price, _Digits), DoubleToString(sl, _Digits), DoubleToString(tp, _Digits), IntegerToString(slip),
       IntegerToString(result_code), IntegerToString(err),
@@ -129,6 +142,14 @@ void ES_Log_Write(string event, int ticket, int op, double lots, double price, d
       note
    );
    if(ES_Log_FlushEvery>0) FileFlush(ES_log_handle);
+   // update filename range using this log timestamp
+   string dt = ts;
+   for(int i=0; i<StringLen(dt); i++) {
+      ushort ch = StringGetCharacter(dt, i);
+      if(ch==':' || ch==' ') dt = StringSubstr(dt,0,i) + "_" + StringSubstr(dt,i+1);
+   }
+   ES_log_end_dt = dt;
+   if(!ES_log_has_start) { ES_log_start_dt = dt; ES_log_has_start = true; }
 }
 
 void ES_Log_Event_Double(string event, string key, double val) {
@@ -148,8 +169,10 @@ void ES_Log_Event_TPAssign(double vwap, double basket_tp) {
    double spr=MarketInfo(ES_log_symbol, MODE_SPREAD);
    double floating = ES_CurrentFloatingPL();
    double closed   = ES_ClosedPL_Today();
+   datetime now = TimeCurrent();
+   string ts = ES_TimeToStr(now);
    FileWrite(ES_log_handle,
-      ES_TimeToStr(TimeCurrent()), "BASKET_TP_ASSIGN", ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
+      ts, "BASKET_TP_ASSIGN", ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
       DoubleToString(bid, _Digits), DoubleToString(ask, _Digits), DoubleToString(spr, 0),
       IntegerToString(0), "-1", "", "", "", "", IntegerToString(0),
       IntegerToString(1), IntegerToString(0),
@@ -158,6 +181,14 @@ void ES_Log_Event_TPAssign(double vwap, double basket_tp) {
       ""
    );
    if(ES_Log_FlushEvery>0) FileFlush(ES_log_handle);
+   // update filename range
+   string dt = ts;
+   for(int i=0; i<StringLen(dt); i++) {
+      ushort ch = StringGetCharacter(dt, i);
+      if(ch==':' || ch==' ') dt = StringSubstr(dt,0,i) + "_" + StringSubstr(dt,i+1);
+   }
+   ES_log_end_dt = dt;
+   if(!ES_log_has_start) { ES_log_start_dt = dt; ES_log_has_start = true; }
 }
 
 // ---------- Wrappers ----------
