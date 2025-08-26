@@ -1,6 +1,6 @@
 timestamp;event;symbol;period;magic;bid;ask;spread;ticket;order_type;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
 
-# EuroScalper Log Schema (v1.2, filename update)
+# EuroScalper Log Schema (v1.3, filename range)
 
 This document defines the exact CSV output produced by EuroScalper’s logger. It supersedes v1.0 by renaming column **10** from `op` (numeric) to **`order_type`** (human‑readable).
 
@@ -78,12 +78,14 @@ This document defines the exact CSV output produced by EuroScalper’s logger. I
 
 ## File naming convention (recommended)
 
-`<SYMBOL>_<YYYY.MM.DD>_<HH>_<MM>_<SS>_<RUN_TAG>.csv`  
-Examples:  
-- `EURUSD_2025.08.26_01_12_05_BASELINE.csv`  
-- `EURUSD_2025.08.26_01_12_05_CLEAN.csv`
+`<SYMBOL>_<FROM_YYYY.MM.DD>_<FROM_HH>_<FROM_MM>_<FROM_SS>_TO_<TO_YYYY.MM.DD>_<TO_HH>_<TO_MM>_<TO_SS>_<RUN_TAG>.csv`
+Examples:
+- `EURUSD_2025.08.26_01_12_05_TO_2025.08.26_23_59_59_BASELINE.csv`
+- `EURUSD_2025.08.26_01_12_05_TO_2025.08.26_23_59_59_CLEAN.csv`
 
-- During backtests, MT4 writes to `tester/files/EuroScalperLogs/` (or `MQL4/Files/EuroScalperLogs/` for live).  
+The **FROM** and **TO** segments record the backtest's first and last tick times rather than the machine's current time.
+
+- During backtests, MT4 writes to `tester/files/EuroScalperLogs/` (or `MQL4/Files/EuroScalperLogs/` for live).
 - For version control, copy the resulting CSVs into your repo under `repo/sample_logs/` (or another tracked folder).
 
 ## Comparator alignment & tolerance (for `compare_logs.py`)
@@ -108,6 +110,7 @@ Examples:
 - Empty cells indicate “not applicable” for that event.
 
 ## Changelog
-- **v1.2** — Updated filename convention: removed MAGIC from filename; added RUN_TAG (BASELINE/CLEAN).  
-- **v1.1** — `op` → `order_type`; added readable order types and expanded event notes.  
+- **v1.3** — Added end timestamp (`_TO_`) to filename.
+- **v1.2** — Updated filename convention: removed MAGIC from filename; added RUN_TAG (BASELINE/CLEAN).
+- **v1.1** — `op` → `order_type`; added readable order types and expanded event notes.
 - **v1.0** — initial schema with numeric `op`.
