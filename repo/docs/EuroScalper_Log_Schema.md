@@ -13,6 +13,7 @@ This document defines the exact CSV output produced by EuroScalper’s logger. I
 
 ## Column definitions (22 columns; semicolon‑separated)
 
+
 1. **timestamp** — broker time `YYYY.MM.DD HH:MM:SS`
 2. **event** — event name (see *Event types*)
 3. **symbol** — symbol (e.g., `EURUSD`)
