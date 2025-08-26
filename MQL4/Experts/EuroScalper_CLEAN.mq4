@@ -1,8 +1,11 @@
 // EuroScalper_CLEAN.mq4 (Step 3 - parity fix: slippage=5 & magic filename)
 // Externs + logger + session/open-range gating + first-entry logic
+#define ES_RUN_TAG "CLEAN"
 #property strict
 #include <EuroScalper_Logging_Config.mqh>
 #include <ES_Logger.mqh>
+input int Magic = 101111;
+
 
 extern string Minimal_Deposit = "$200";
 extern string Time_Frame = "Time Frame M1";

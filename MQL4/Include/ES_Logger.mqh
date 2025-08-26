@@ -1,3 +1,10 @@
+
+// === Added: Run tag for log filename (BASELINE/CLEAN) ===
+#ifndef ES_RUN_TAG
+#define ES_RUN_TAG "RUN"
+#endif
+string ES_Log_RunTag = ES_RUN_TAG;
+// ================================================
 // ES_Logger.mqh - logging & wrappers for EuroScalper
 #property strict
 

@@ -3,6 +3,7 @@
 //|                                      Copyright 2023, lengockhanhhai|
 //|                                       lengockhanhhai@gmail.com|
 //+------------------------------------------------------------------+
+#define ES_RUN_TAG "BASELINE"
 #property copyright "2023.";
 #property link "lengockhanhhai@gmail.com"
 #property version "1.10";
