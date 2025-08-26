@@ -117,7 +117,9 @@ int ES_OpenFirstTrade()
       // Ensure the just-opened trade is visible
 if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return(0); }
 double vwap = ES_ComputeVWAP(magic);
-      ES_Log_Event_TPAssign(vwap, 0);
+      double tpdist = TakeProfit * Point;
+      double basket_tp_log = (cmd == OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
+      ES_Log_Event_TPAssign(vwap, basket_tp_log);
    }
    return(ticket);
 }
