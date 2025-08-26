@@ -81,7 +81,7 @@ double ES_GetFirstLotSize()
    return(Lot);
 }
 
-double ES_ComputeVWAP(const int magic)
+double ES_ComputeVWAP(const int Magic)
 {
    double sumLots = 0.0;
    double sumPx   = 0.0;
@@ -90,7 +90,7 @@ double ES_ComputeVWAP(const int magic)
    {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
       if(OrderSymbol() != Symbol()) continue;
-      if(OrderMagicNumber() != magic) continue;
+      if(OrderMagicNumber() != Magic) continue;
       int t = OrderType();
       if(t!=OP_BUY && t!=OP_SELL) continue; // market positions only
       double lots = OrderLots();
@@ -106,7 +106,7 @@ int ES_OpenFirstTrade()
    int    cmd  = -1;
    double price = 0;
    const int SLIPPAGE = 5; // baseline parity
-   
+
    if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
    else                    { cmd = OP_BUY;  price = Ask; }
 
@@ -118,7 +118,7 @@ int ES_OpenFirstTrade()
       RefreshRates();
       // Ensure the just-opened trade is visible
 if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return(0); }
-double vwap = ES_ComputeVWAP(magic);
+double vwap = ES_ComputeVWAP(Magic);
       double tpdist = TakeProfit * Point;
       double basket_tp_log = (cmd == OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
       ES_Log_Event_TPAssign(vwap, basket_tp_log);
