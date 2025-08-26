@@ -1,3 +1,4 @@
 run_id,date,time,symbol,timeframe,magic,ea_commit,set_path,log_path,spread,model,notes,from_datetime,to_datetime
 2025-08-24-baseline,2025-08-24,00:00:00,EURUSD,M5,0,8dcee3d,repo/presets/backtests/EURUSD_M5_0__20250707_010100__default-grid.set,repo/sample_logs/EURUSD_0_2025.08.04_00_00_00.csv,2,every tick,baseline reference run,2025-08-04T00:00:00Z,2025-08-15T23:59:00Z
-2025-08-24-clean,2025-08-24,00:00:00,EURUSD,M5,1,0f676a1,repo/presets/backtests/EURUSD__M5__0__20250707__010100__default-grid.set,repo/sample_logs/EURUSD_1_2025.08.04_00_00_00.csv,2,every tick,first-entry only,2025-08-04T00:00:00Z,2025-08-15T23:59:00Z
+2025-08-24-clean,2025-08-24,00:00:00,EURUSD,M5,1,0f676a1,repo/presets/backtests/EURUSD_M5_0__20250707_010100__default-grid.set,repo/sample_logs/EURUSD_1_2025.08.04_00_00_00.csv,2,every tick,first-entry only,2025-08-04T00:00:00Z,2025-08-15T23:59:00Z
+2025-08-25-clean,2025-08-25,00:00:00,EURUSD,M5,1,7de5167,repo/presets/backtests/EURUSD_M5_0__20250707_010100__default-grid.set,repo/sample_logs/EURUSD_1_2025.08.04_00_00_00.csv,2,every tick,basket_tp parity fix,2025-08-04T00:00:00Z,2025-08-15T23:59:00Z
