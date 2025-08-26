@@ -4,6 +4,8 @@
 #include <EuroScalper_Logging_Config.mqh>
 #include <ES_Logger.mqh>
 
+#define ES_MAGIC 1 // baseline hard-coded magic
+
 extern string Minimal_Deposit = "$200";
 extern string Time_Frame = "Time Frame M1";
 extern string Pairs = "EurUsd";
@@ -78,31 +80,70 @@ double ES_GetFirstLotSize()
    return(Lot);
 }
 
+void ES_UpdateBasketTP()
+{
+   double sumPriceLots = 0.0;
+   double sumLots      = 0.0;
+   int    dir          = -1;
+
+   for(int i=OrdersTotal()-1; i>=0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=_Symbol || OrderMagicNumber()!=ES_MAGIC) continue;
+      if(OrderType()!=OP_BUY && OrderType()!=OP_SELL) continue;
+
+      sumPriceLots += OrderOpenPrice() * OrderLots();
+      sumLots      += OrderLots();
+      dir = OrderType();
+   }
+
+   if(sumLots <= 0) return;
+
+   double vwap = NormalizeDouble(sumPriceLots / sumLots, _Digits);
+   double basket_tp;
+
+   if(dir == OP_BUY)
+      basket_tp = vwap + TakeProfit * _Point;
+   else if(dir == OP_SELL)
+      basket_tp = vwap - TakeProfit * _Point;
+   else
+      return;
+
+   ES_Log_Event_TPAssign(vwap, basket_tp);
+
+   for(int i=OrdersTotal()-1; i>=0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=_Symbol || OrderMagicNumber()!=ES_MAGIC) continue;
+      if(OrderType()!=OP_BUY && OrderType()!=OP_SELL) continue;
+
+      ES_Log_OrderModify(OrderTicket(), vwap, OrderStopLoss(), basket_tp, 0, clrNONE);
+   }
+}
+
 int ES_OpenFirstTrade()
 {
    double lots = ES_GetFirstLotSize();
    int    cmd  = -1;
    double price = 0;
    const int SLIPPAGE = 5; // baseline parity
-   int    magic = 1;       // hard-coded as requested
 
    if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
    else                    { cmd = OP_BUY;  price = Ask; }
 
    int ticket = ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
-                                 0, 0, Symbol()+"-Euro Scalper-0", magic, 0, clrNONE);
+                                 0, 0, Symbol()+"-Euro Scalper-0", ES_MAGIC, 0, clrNONE);
 
    if(ticket > 0)
-   {
-      ES_Log_Event_TPAssign(0, 0); // placeholder; real VWAP/TP later
-   }
+      ES_UpdateBasketTP();
+
    return(ticket);
 }
 
 int init()
 {
    // Set context BEFORE opening the log so magic appears in filename
-   ES_Log_SetContext(_Symbol, Period(), 1);
+   ES_Log_SetContext(_Symbol, Period(), ES_MAGIC);
    ES_Log_OnInit();
    return(0);
 }
