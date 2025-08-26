@@ -87,8 +87,8 @@ void ES_Log_OnDeinit() {
       ES_log_handle = INVALID_HANDLE;
       // Append end timestamp to filename captured from last logged event
       string new_name = "EuroScalperLogs/" + ES_log_symbol + "_" + ES_log_start_dt + "_TO_" + ES_log_end_dt + "_" + ES_Log_RunTag + ".csv";
-      FileCopy(ES_log_path, new_name);
-      FileDelete(ES_log_path);
+      // FileMove handles renaming in place; FILE_REWRITE allows overwriting if needed
+      FileMove(ES_log_path, 0, new_name, FILE_REWRITE);
       ES_log_path = new_name;
    }
 }
