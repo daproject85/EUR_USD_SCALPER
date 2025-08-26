@@ -78,7 +78,6 @@ double ES_GetFirstLotSize()
    return(Lot);
 }
 
-int 
 double ES_ComputeVWAP(const int magic)
 {
    double sumLots = 0.0;
@@ -98,8 +97,7 @@ double ES_ComputeVWAP(const int magic)
    if(sumLots > 0.0) return (sumPx / sumLots);
    return (0.0);
 }
-
-ES_OpenFirstTrade()
+int ES_OpenFirstTrade()
 {
    double lots = ES_GetFirstLotSize();
    int    cmd  = -1;
@@ -110,15 +108,15 @@ ES_OpenFirstTrade()
    if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
    else                    { cmd = OP_BUY;  price = Ask; }
 
-   int ticket = ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
+   int ticket = (int)ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
                                  0, 0, "FirstEntry", magic, 0, clrNONE);
 
    if(ticket > 0)
    {
       RefreshRates();
       // Ensure the just-opened trade is visible
-      OrderSelect(ticket, SELECT_BY_TICKET);
-      double vwap = ES_ComputeVWAP(magic);
+if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return(0); }
+double vwap = ES_ComputeVWAP(magic);
       ES_Log_Event_TPAssign(vwap, 0);
    }
    return(ticket);
