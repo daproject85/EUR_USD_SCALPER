@@ -48,7 +48,7 @@ void ES_Log_OpenFile() {
       ushort ch = StringGetCharacter(dt, i);
       if(ch==':' || ch==' ') dt = StringSubstr(dt,0,i) + "_" + StringSubstr(dt,i+1);
    }
-   string fname = "EuroScalperLogs/" + ES_log_symbol + "_" + IntegerToString(ES_log_magic) + "_" + dt + ".csv";
+   string fname = "EuroScalperLogs/" + ES_log_symbol + "_" + dt + "_" + ES_Log_RunTag + ".csv";
    ES_log_path = fname;
    int flags = FILE_CSV|FILE_WRITE|FILE_READ|FILE_SHARE_WRITE|FILE_SHARE_READ;
    ES_log_handle = FileOpen(ES_log_path, flags, ';');
