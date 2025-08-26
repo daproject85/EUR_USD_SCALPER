@@ -1,6 +1,6 @@
 timestamp;event;symbol;period;magic;bid;ask;spread;ticket;order_type;lots;price;sl;tp;slip;result;error;floating_pl;closed_pl_today;vwap;basket_tp;note
 
-# EuroScalper Log Schema (v1.1, complete)
+# EuroScalper Log Schema (v1.2, filename update)
 
 This document defines the exact CSV output produced by EuroScalper’s logger. It supersedes v1.0 by renaming column **10** from `op` (numeric) to **`order_type`** (human‑readable).
 
@@ -77,8 +77,10 @@ This document defines the exact CSV output produced by EuroScalper’s logger. I
 
 ## File naming convention (recommended)
 
-`<SYMBOL>_<MAGIC>_<YYYY.MM.DD>_<HH>_<MM>_<SS>.csv`  
-Example: `EURUSD_101111_2025.08.04_02_00_00.csv`
+`<SYMBOL>_<YYYY.MM.DD>_<HH>_<MM>_<SS>_<RUN_TAG>.csv`  
+Examples:  
+- `EURUSD_2025.08.26_01_12_05_BASELINE.csv`  
+- `EURUSD_2025.08.26_01_12_05_CLEAN.csv`
 
 - During backtests, MT4 writes to `tester/files/EuroScalperLogs/` (or `MQL4/Files/EuroScalperLogs/` for live).  
 - For version control, copy the resulting CSVs into your repo under `repo/sample_logs/` (or another tracked folder).
@@ -105,5 +107,6 @@ Example: `EURUSD_101111_2025.08.04_02_00_00.csv`
 - Empty cells indicate “not applicable” for that event.
 
 ## Changelog
-- **v1.1** — `op` → `order_type`; added readable order types and expanded event notes.
+- **v1.2** — Updated filename convention: removed MAGIC from filename; added RUN_TAG (BASELINE/CLEAN).  
+- **v1.1** — `op` → `order_type`; added readable order types and expanded event notes.  
 - **v1.0** — initial schema with numeric `op`.
