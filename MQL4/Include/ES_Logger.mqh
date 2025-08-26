@@ -48,7 +48,7 @@ void ES_Log_OpenFile() {
       ushort ch = StringGetCharacter(dt, i);
       if(ch==':' || ch==' ') dt = StringSubstr(dt,0,i) + "_" + StringSubstr(dt,i+1);
    }
-   string fname = "EuroScalperLogs/" + ES_log_symbol + "_" + dt + "_" + ES_Log_RunTag + ".csv";
+   string fname = "EuroScalperLogs/" + ES_log_symbol + "_" + IntegerToString(ES_log_magic) + "_" + dt + ".csv";
    ES_log_path = fname;
    int flags = FILE_CSV|FILE_WRITE|FILE_READ|FILE_SHARE_WRITE|FILE_SHARE_READ;
    ES_log_handle = FileOpen(ES_log_path, flags, ';');
@@ -57,7 +57,7 @@ void ES_Log_OpenFile() {
    FileWrite(ES_log_handle,
       "timestamp","event","symbol","period","magic",
       "bid","ask","spread",
-      "ticket","op","lots","price","sl","tp","slip","result","error",
+      "ticket","order_type","lots","price","sl","tp","slip","result","error",
       "floating_pl","closed_pl_today",
       "vwap","basket_tp",
       "note"
@@ -142,8 +142,22 @@ void ES_Log_Event_EquityStop(double dd_amt, double risk_frac, double peak_eq, do
 }
 
 void ES_Log_Event_TPAssign(double vwap, double basket_tp) {
-   string note = "vwap=" + DoubleToString(vwap, _Digits) + "; basket_tp=" + DoubleToString(basket_tp, _Digits);
-   ES_Log_Write("BASKET_TP_ASSIGN", 0, -1, 0, 0, 0, 0, 0, 1, 0, note);
+   if(!ES_Log_Enable || !ES_log_ready || ES_log_handle==INVALID_HANDLE) return;
+   double bid=MarketInfo(ES_log_symbol, MODE_BID);
+   double ask=MarketInfo(ES_log_symbol, MODE_ASK);
+   double spr=MarketInfo(ES_log_symbol, MODE_SPREAD);
+   double floating = ES_CurrentFloatingPL();
+   double closed   = ES_ClosedPL_Today();
+   FileWrite(ES_log_handle,
+      ES_TimeToStr(TimeCurrent()), "BASKET_TP_ASSIGN", ES_log_symbol, IntegerToString(ES_log_period), IntegerToString(ES_log_magic),
+      DoubleToString(bid, _Digits), DoubleToString(ask, _Digits), DoubleToString(spr, 0),
+      IntegerToString(0), "-1", "", "", "", "", IntegerToString(0),
+      IntegerToString(1), IntegerToString(0),
+      DoubleToString(floating, 2), DoubleToString(closed, 2),
+      DoubleToString(vwap, _Digits), DoubleToString(basket_tp, _Digits),
+      ""
+   );
+   if(ES_Log_FlushEvery>0) FileFlush(ES_log_handle);
 }
 
 // ---------- Wrappers ----------
