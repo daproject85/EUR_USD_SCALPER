@@ -266,6 +266,11 @@ def main():
             if args.strict_rows:
                 mismatches += 1
                 continue
+        if b_list and c_list:
+            def _sort_key(row, header):
+                return tuple(row[i] if i < len(row) else "" for i, col in enumerate(header) if col not in key_cols)
+            b_list = sorted(b_list, key=lambda r: _sort_key(r, b_header))
+            c_list = sorted(c_list, key=lambda r: _sort_key(r, c_header))
         for i in range(min(len(b_list), len(c_list))):
             total += 1
             diffs = compare_rows(b_list[i], c_list[i], b_header, ignore_set,

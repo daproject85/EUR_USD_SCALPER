@@ -36,6 +36,11 @@ MQL4/Include/*
 !repo/presets/
 !repo/presets/**
 
+# Tests
+!repo/tests/
+!repo/tests/**
+repo/tests/__pycache__/
+
 # Explicitly ignore volatile MT4 runtime stuff
 history/
 logs/
