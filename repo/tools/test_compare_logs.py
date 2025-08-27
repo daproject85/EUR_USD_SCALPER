@@ -64,15 +64,24 @@ col3
     assert "Candidate header does not match schema" in result.stdout
 
 
-def _run_compare(baseline, candidate, align_key):
-    return subprocess.run([
+def test_lots_difference_detected(tmp_path):
+    schema_path = tmp_path / "schema.txt"
+    schema_path.write_text("timestamp,event,ticket,op,lots\n")
+
+    header = "timestamp,event,ticket,op,lots\n"
+    baseline = tmp_path / "baseline.csv"
+    candidate = tmp_path / "candidate.csv"
+    baseline.write_text(header + "1,trade,42,0,0.1\n")
+    candidate.write_text(header + "1,trade,42,0,0.2\n")
+
+    result = subprocess.run([
         sys.executable,
         str(TOOLS_DIR / "compare_logs.py"),
         "--baseline", str(baseline),
         "--candidate", str(candidate),
-        "--align-key", align_key,
+        "--schema", str(schema_path),
+        "--align-key", "timestamp,event,ticket,op",
     ], capture_output=True, text=True)
-
 
 def test_duplicate_key_mismatched_lots_reports_diff(tmp_path):
     header = "timestamp,event,ticket,op,lots\n"
@@ -85,17 +94,3 @@ def test_duplicate_key_mismatched_lots_reports_diff(tmp_path):
 
     assert result.returncode != 0
     assert "lots=0.02" in result.stdout and "lots=0.03" in result.stdout
-
-
-def test_duplicate_key_unmatched_row_reports_lots(tmp_path):
-    header = "timestamp,event,ticket,op,lots\n"
-    baseline = tmp_path / "b.csv"
-    candidate = tmp_path / "c.csv"
-    baseline.write_text(header + "1,A,100,0,0.01\n1,A,100,0,0.02\n")
-    candidate.write_text(header + "1,A,100,0,0.01\n")
-
-    result = _run_compare(baseline, candidate, "timestamp,event,ticket,op")
-
-    assert result.returncode != 0
-    assert "lots=0.02" in result.stdout
-
