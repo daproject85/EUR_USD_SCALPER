@@ -71,7 +71,30 @@ def load_schema(schema_path):
 # Row utilities
 # -------------------------------
 def to_key(row, key_cols, idx_map):
-    return tuple(row[idx_map[k]] if idx_map[k] < len(row) else "" for k in key_cols if k in idx_map)
+    """Return a tuple key extracted from *row* using *key_cols*.
+
+    Previously this helper would drop columns that were absent in ``idx_map``.
+    When the baseline or candidate CSV was missing one of the requested key
+    columns, the resulting tuple would be shorter than ``key_cols``.  This
+    meant two rows that logically shared the same key could end up with
+    different tuple lengths and therefore never align.  The downstream effect
+    was diff rows showing empty baseline values even though the row existed in
+    the file.
+
+    To make alignment robust, we now always return a tuple of the same length
+    as ``key_cols``.  Missing columns (or indexes beyond the row length) are
+    represented as empty strings, ensuring both baseline and candidate produce
+    comparable keys.
+    """
+
+    key = []
+    for col in key_cols:
+        idx = idx_map.get(col)
+        if idx is not None and idx < len(row):
+            key.append(row[idx])
+        else:
+            key.append("")
+    return tuple(key)
 
 def try_float(x):
     try:
