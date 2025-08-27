@@ -126,6 +126,81 @@ double vwap = ES_ComputeVWAP(Magic);
    return(ticket);
 }
 
+// ---- Grid Add Helpers ----
+int ES_CountOpenTrades(const int magicNumber)
+{
+   int count = 0;
+   for(int i=0; i<OrdersTotal(); i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol() != Symbol()) continue;
+      if(OrderMagicNumber() != magicNumber) continue;
+      int t = OrderType();
+      if(t==OP_BUY || t==OP_SELL) count++;
+   }
+   return(count);
+}
+
+bool ES_SelectLastOrder(const int magicNumber, const int cmd,
+                        double &price, double &lots)
+{
+   datetime lastTime = 0;
+   bool found = false;
+   for(int i=0; i<OrdersTotal(); i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol() != Symbol()) continue;
+      if(OrderMagicNumber() != magicNumber) continue;
+      if(OrderType() != cmd) continue;
+      if(OrderOpenTime() > lastTime)
+      {
+         lastTime = OrderOpenTime();
+         price    = OrderOpenPrice();
+         lots     = OrderLots();
+         found    = true;
+      }
+   }
+   return(found);
+}
+
+double ES_ComputeNextLot(double lastLots, int openTrades)
+{
+   double next = lastLots;
+   if(Averaging > 0 && (openTrades % (int)Averaging) == 0)
+      next = lastLots * LotMultiplikator;
+   double step = MarketInfo(Symbol(), MODE_LOTSTEP);
+   if(step <= 0) step = 0.01;
+   int digits = (int)MathRound(-MathLog10(step));
+   return(NormalizeDouble(next, digits));
+}
+
+void ES_CheckGridAdds(int openTrades)
+{
+   double lastPrice, lastLots;
+   const int SLIPPAGE = 5;
+
+   if(ES_SelectLastOrder(Magic, OP_BUY, lastPrice, lastLots))
+   {
+      if((lastPrice - Ask) >= (Step * Point))
+      {
+         double lots = ES_ComputeNextLot(lastLots, openTrades);
+         string comment = StringFormat("%s-Euro Scalper-%d", Symbol(), openTrades);
+         ES_Log_OrderSend(Symbol(), OP_BUY, lots, Ask, SLIPPAGE, 0, 0, comment, Magic, 0, clrNONE);
+      }
+      return;
+   }
+
+   if(ES_SelectLastOrder(Magic, OP_SELL, lastPrice, lastLots))
+   {
+      if((Bid - lastPrice) >= (Step * Point))
+      {
+         double lots = ES_ComputeNextLot(lastLots, openTrades);
+         string comment = StringFormat("%s-Euro Scalper-%d", Symbol(), openTrades);
+         ES_Log_OrderSend(Symbol(), OP_SELL, lots, Bid, SLIPPAGE, 0, 0, comment, Magic, 0, clrNONE);
+      }
+   }
+}
+
 int init()
 {
    // Set context BEFORE opening the log so magic appears in filename
@@ -139,8 +214,11 @@ int start()
    if(!ES_CanTradeNow())
       return(0);
 
-   if(OrdersTotal() == 0)
+   int openTrades = ES_CountOpenTrades(Magic);
+   if(openTrades == 0)
       ES_OpenFirstTrade();
+   else if(openTrades < MaxTrades)
+      ES_CheckGridAdds(openTrades);
 
    return(0);
 }
