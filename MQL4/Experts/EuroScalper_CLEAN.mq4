@@ -36,6 +36,8 @@ extern bool   invisible_mode = true;
 extern double OpenRangePips = 1;
 extern double MaxDailyRange = 20000;
 
+datetime g_lastBarTime = 0;
+
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
 {
@@ -269,6 +271,10 @@ int init()
 
 int start()
 {
+   if(Time[0] <= g_lastBarTime)
+      return(0);
+   g_lastBarTime = Time[0];
+
    if(!ES_CanTradeNow())
       return(0);
 
