@@ -6,6 +6,8 @@
 #include <ES_Logger.mqh>
 input int Magic = 101111;
 
+bool BasketTPUpdatePending = false;
+
 
 extern string Minimal_Deposit = "$200";
 extern string Time_Frame = "Time Frame M1";
@@ -116,13 +118,16 @@ int ES_OpenFirstTrade()
    if(ticket > 0)
    {
       RefreshRates();
-      ES_UpdateBasketTP();
+      BasketTPUpdatePending = true;
    }
    return(ticket);
 }
 
 void ES_UpdateBasketTP()
 {
+   if(!BasketTPUpdatePending)
+      return;
+
    int dir = ES_BasketDirection();
    if(dir!=OP_BUY && dir!=OP_SELL)
       return;
@@ -139,8 +144,12 @@ void ES_UpdateBasketTP()
       if(OrderSymbol()!=Symbol())      continue;
       if(OrderMagicNumber()!=Magic)    continue;
       if(OrderType()!=dir)             continue;
+      if(MathAbs(OrderTakeProfit() - basket_tp) <= Point)
+         continue;
       ES_Log_OrderModify(OrderTicket(), vwap, OrderStopLoss(), basket_tp, 0, 65535);
    }
+
+   BasketTPUpdatePending = false;
 }
 
 // ---- Grid Add Helpers ----
@@ -244,7 +253,7 @@ void ES_TryGridAdd()
    if(ticket>0)
    {
       RefreshRates();
-      ES_UpdateBasketTP();
+      BasketTPUpdatePending = true;
    }
 }
 
@@ -268,7 +277,8 @@ int start()
    else
       ES_TryGridAdd();
 
-   ES_UpdateBasketTP();
+   if(BasketTPUpdatePending)
+      ES_UpdateBasketTP();
    return(0);
 }
 
