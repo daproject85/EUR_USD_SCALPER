@@ -53,13 +53,17 @@ def read_csv(path, delimiter_override=None):
 def load_schema(schema_path):
     if not schema_path or not os.path.exists(schema_path):
         return None
+    parts = []
     with open(schema_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            cols = [c.strip() for c in line.replace(";", ",").split(",")]
-            return cols
+            parts.append(line)
+    if parts:
+        joined = ",".join(parts)
+        cols = [c.strip() for c in joined.replace(";", ",").split(",") if c.strip()]
+        return cols
     return None
 
 # -------------------------------
