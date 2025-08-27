@@ -70,9 +70,8 @@ def load_schema(schema_path):
 # -------------------------------
 # Row utilities
 # -------------------------------
-def to_key(row, header, key_cols):
-    idxs = [header.index(k) for k in key_cols if k in header]
-    return tuple(row[i] if i < len(row) else "" for i in idxs)
+def to_key(row, key_cols, idx_map):
+    return tuple(row[idx_map[k]] if idx_map[k] < len(row) else "" for k in key_cols if k in idx_map)
 
 def try_float(x):
     try:
@@ -242,12 +241,14 @@ def main():
                 sys.exit(1)
 
     key_cols = [k.strip() for k in args.align_key.split(",") if k.strip()]
+    b_idx_map = {k: b_header.index(k) for k in key_cols if k in b_header}
     b_map = {}
     for r in b_rows:
-        b_map.setdefault(to_key(r, b_header, key_cols), []).append(r)
+        b_map.setdefault(to_key(r, key_cols, b_idx_map), []).append(r)
+    c_idx_map = {k: c_header.index(k) for k in key_cols if k in c_header}
     c_map = {}
     for r in c_rows:
-        c_map.setdefault(to_key(r, c_header, key_cols), []).append(r)
+        c_map.setdefault(to_key(r, key_cols, c_idx_map), []).append(r)
 
     ignore_set = set([c.strip() for c in args.ignore_cols.split(",") if c.strip()])
 
