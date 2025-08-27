@@ -9,6 +9,24 @@ sys.path.append(str(TOOLS_DIR))
 import compare_logs  # noqa: E402
 
 
+# Helper to invoke compare_logs.py with baseline/candidate and key
+def _run_compare(baseline: Path, candidate: Path, key: str, schema: Path | None = None):
+    """Run compare_logs.py and return the completed process."""
+    cmd = [
+        sys.executable,
+        str(TOOLS_DIR / "compare_logs.py"),
+        "--baseline",
+        str(baseline),
+        "--candidate",
+        str(candidate),
+        "--align-key",
+        key,
+    ]
+    if schema is not None:
+        cmd.extend(["--schema", str(schema)])
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
 def test_load_schema_and_headers(tmp_path):
     schema_path = tmp_path / "schema.txt"
     schema_path.write_text("""# comment line
