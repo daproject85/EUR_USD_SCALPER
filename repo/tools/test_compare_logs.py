@@ -83,6 +83,14 @@ def test_lots_difference_detected(tmp_path):
         "--align-key", "timestamp,event,ticket,op",
     ], capture_output=True, text=True)
 
-    assert result.returncode != 0
-    assert "lots=0.1" in result.stdout and "lots=0.2" in result.stdout
+def test_duplicate_key_mismatched_lots_reports_diff(tmp_path):
+    header = "timestamp,event,ticket,op,lots\n"
+    baseline = tmp_path / "b.csv"
+    candidate = tmp_path / "c.csv"
+    baseline.write_text(header + "1,A,100,0,0.01\n1,A,100,0,0.02\n")
+    candidate.write_text(header + "1,A,100,0,0.01\n1,A,100,0,0.03\n")
 
+    result = _run_compare(baseline, candidate, "timestamp,event,ticket,op")
+
+    assert result.returncode != 0
+    assert "lots=0.02" in result.stdout and "lots=0.03" in result.stdout

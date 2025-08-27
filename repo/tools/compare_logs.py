@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse, csv, io, sys, os
+from collections import Counter
 
 # -------------------------------
 # Parsing & IO
@@ -266,20 +267,40 @@ def main():
             if args.strict_rows:
                 mismatches += 1
                 continue
-        if b_list and c_list:
-            def _sort_key(row, header):
-                return tuple(row[i] if i < len(row) else "" for i, col in enumerate(header) if col not in key_cols)
-            b_list = sorted(b_list, key=lambda r: _sort_key(r, b_header))
-            c_list = sorted(c_list, key=lambda r: _sort_key(r, c_header))
-        for i in range(min(len(b_list), len(c_list))):
-            total += 1
-            diffs = compare_rows(b_list[i], c_list[i], b_header, ignore_set,
-                                 args.float_tol_price, args.float_tol_money, args.float_tol_lots)
-            if diffs:
-                mismatches += 1
-                if shown < args.max_diffs:
-                    diff_records.append({"key": _stringify_key(k), "diffs": diffs})
-                    shown += 1
+        if b_list or c_list:
+            # Align rows using row-content matching rather than index pairing.
+            b_counter = Counter(tuple(r) for r in b_list)
+            c_counter = Counter(tuple(r) for r in c_list)
+
+            # Count rows that match exactly and remove them from the counters.
+            for row in set(b_counter) & set(c_counter):
+                matched = min(b_counter[row], c_counter[row])
+                if matched:
+                    total += matched
+                    b_counter[row] -= matched
+                    c_counter[row] -= matched
+                    if b_counter[row] == 0:
+                        del b_counter[row]
+                    if c_counter[row] == 0:
+                        del c_counter[row]
+
+            # Remaining rows represent mismatches.
+            unmatched_b = [list(row) for row, cnt in b_counter.items() for _ in range(cnt)]
+            unmatched_c = [list(row) for row, cnt in c_counter.items() for _ in range(cnt)]
+
+            empty_row = ["" for _ in b_header]
+            max_len = max(len(unmatched_b), len(unmatched_c))
+            for i in range(max_len):
+                b_row = unmatched_b[i] if i < len(unmatched_b) else empty_row
+                c_row = unmatched_c[i] if i < len(unmatched_c) else empty_row
+                total += 1
+                diffs = compare_rows(b_row, c_row, b_header, ignore_set,
+                                     args.float_tol_price, args.float_tol_money, args.float_tol_lots)
+                if diffs:
+                    mismatches += 1
+                    if shown < args.max_diffs:
+                        diff_records.append({"key": _stringify_key(k), "diffs": diffs})
+                        shown += 1
 
     # Pretty-print
     if rowcount_records and not args.no_rowcount:
