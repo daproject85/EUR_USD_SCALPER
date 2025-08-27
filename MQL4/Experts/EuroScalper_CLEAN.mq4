@@ -116,14 +116,31 @@ int ES_OpenFirstTrade()
    if(ticket > 0)
    {
       RefreshRates();
-      // Ensure the just-opened trade is visible
-if(!OrderSelect(ticket, SELECT_BY_TICKET)) { return(0); }
-double vwap = ES_ComputeVWAP(Magic);
-      double tpdist = TakeProfit * Point;
-      double basket_tp_log = (cmd == OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
-      ES_Log_Event_TPAssign(vwap, basket_tp_log);
+      ES_UpdateBasketTP();
    }
    return(ticket);
+}
+
+void ES_UpdateBasketTP()
+{
+   int dir = ES_BasketDirection();
+   if(dir!=OP_BUY && dir!=OP_SELL)
+      return;
+
+   double vwap = ES_ComputeVWAP(Magic);
+   double tpdist = TakeProfit * Point;
+   double basket_tp = (dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
+   ES_Log_Event_TPAssign(vwap, basket_tp);
+
+   int total = OrdersTotal();
+   for(int i=0; i<total; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      if(OrderType()!=dir)             continue;
+      ES_Log_OrderModify(OrderTicket(), vwap, OrderStopLoss(), basket_tp, 0, 65535);
+   }
 }
 
 // ---- Grid Add Helpers ----
@@ -227,13 +244,7 @@ void ES_TryGridAdd()
    if(ticket>0)
    {
       RefreshRates();
-      if(OrderSelect(ticket, SELECT_BY_TICKET))
-      {
-         double vwap = ES_ComputeVWAP(Magic);
-         double tpdist = TakeProfit * Point;
-         double basket_tp_log = (dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
-         ES_Log_Event_TPAssign(vwap, basket_tp_log);
-      }
+      ES_UpdateBasketTP();
    }
 }
 
@@ -257,6 +268,7 @@ int start()
    else
       ES_TryGridAdd();
 
+   ES_UpdateBasketTP();
    return(0);
 }
 
