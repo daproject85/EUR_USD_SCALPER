@@ -28,8 +28,12 @@ This package instruments your existing EA **without changing trading logic**. It
 - All **trading inputs & behavior are unchanged**.
 
 ## Where logs go
-- `MQL4/Files/EuroScalperLogs/EuroScalper_<SYMBOL>_<MAGIC>_<YYYYMMDD_HHMMSS>.csv`
+- `MQL4/Files/EuroScalperLogs/<SYMBOL>_<FROM_YYYY.MM.DD_HH_MM_SS>_TO_<TO_YYYY.MM.DD_HH_MM_SS>_<RUN_TAG>.csv`
 - Semicolon‑separated, headers included. See **EuroScalper_Log_Schema.md**.
+  The **FROM**/**TO** parts capture the first and last tick times of the backtest, not the wall‑clock time.
+  Examples:
+  - `EURUSD_2025.08.04_00_00_00_TO_2025.08.04_23_59_59_BASELINE.csv`
+  - `EURUSD_2025.08.04_00_00_00_TO_2025.08.04_23_59_59_CLEAN.csv`
 
 ## What’s captured
 - Every **OrderSend**, **OrderClose**, **OrderModify** (attempt/result, error).
@@ -44,5 +48,5 @@ When the clean rewrite is ready, we’ll emit **identical CSV** so you can compa
 - Risk/TP trigger timings
 
 ## Notes
-- If you run multiple charts/symbols, each gets its own file (magic included).
+- If you run multiple charts/symbols, each gets its own file.
 - Logging is lightweight; disable with `ES_Log_Enable=false` for production.

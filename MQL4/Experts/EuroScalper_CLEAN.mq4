@@ -126,6 +126,117 @@ double vwap = ES_ComputeVWAP(Magic);
    return(ticket);
 }
 
+// ---- Grid Add Helpers ----
+int ES_BasketDirection()
+{
+   int total = OrdersTotal();
+   for(int i=0; i<total; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      int t = OrderType();
+      if(t==OP_BUY || t==OP_SELL)
+         return(t);
+   }
+   return(-1);
+}
+
+int ES_CountTrades(const int cmd)
+{
+   int count=0;
+   int total=OrdersTotal();
+   for(int i=0;i<total;i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      if(OrderType()==cmd)             count++;
+   }
+   return(count);
+}
+
+double ES_LastOpenPrice(const int cmd)
+{
+   double price=0;
+   datetime latest=0;
+   int total=OrdersTotal();
+   for(int i=0;i<total;i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      if(OrderType()!=cmd)             continue;
+      if(OrderOpenTime()>latest)
+      {
+         latest=OrderOpenTime();
+         price=OrderOpenPrice();
+      }
+   }
+   return(price);
+}
+
+double ES_LastLotSize(const int cmd)
+{
+   double lots=Lot;
+   datetime latest=0;
+   int total=OrdersTotal();
+   for(int i=0;i<total;i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      if(OrderType()!=cmd)             continue;
+      if(OrderOpenTime()>latest)
+      {
+         latest=OrderOpenTime();
+         lots=OrderLots();
+      }
+   }
+   return(lots);
+}
+
+double ES_NextLotSize(const int cmd)
+{
+   int count = ES_CountTrades(cmd);
+   if(count==0) return(Lot);
+
+   double lastLot = ES_LastLotSize(cmd);
+   if(count >= Averaging)
+      return( NormalizeDouble(lastLot * LotMultiplikator, 2) );
+   return(lastLot);
+}
+
+void ES_TryGridAdd()
+{
+   int dir = ES_BasketDirection();
+   if(dir!=OP_BUY && dir!=OP_SELL) return;
+
+   int existing = ES_CountTrades(dir);
+   if(existing >= MaxTrades) return;
+
+   double lastPrice = ES_LastOpenPrice(dir);
+   double dist = (dir==OP_BUY) ? (lastPrice - Ask) : (Bid - lastPrice);
+   if(dist < Step * Point) return;
+
+   double lots = ES_NextLotSize(dir);
+   double price = (dir==OP_BUY) ? Ask : Bid;
+   string comment = StringFormat("%s-Euro Scalper-%d", Symbol(), existing);
+   int ticket = (int)ES_Log_OrderSend(Symbol(), dir, lots, price, 5,
+                                      0,0, comment, Magic, 0, clrNONE);
+   if(ticket>0)
+   {
+      RefreshRates();
+      if(OrderSelect(ticket, SELECT_BY_TICKET))
+      {
+         double vwap = ES_ComputeVWAP(Magic);
+         double tpdist = TakeProfit * Point;
+         double basket_tp_log = (dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
+         ES_Log_Event_TPAssign(vwap, basket_tp_log);
+      }
+   }
+}
+
 int init()
 {
    // Set context BEFORE opening the log so magic appears in filename
@@ -141,6 +252,8 @@ int start()
 
    if(OrdersTotal() == 0)
       ES_OpenFirstTrade();
+   else
+      ES_TryGridAdd();
 
    return(0);
 }
