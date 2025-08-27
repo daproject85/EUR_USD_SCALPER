@@ -239,12 +239,11 @@ void ES_TryGridAdd()
 
 int init()
 {
-   // Ensure the logger uses the CLEAN run tag and that the
-   // magic number is reflected in the filename before the log
-   // file is opened.
+   // Use the CLEAN run tag, open the logger once, then attach
+   // symbol/period/magic context without creating a placeholder file.
    ES_Log_RunTag = ES_RUN_TAG;
-   ES_Log_SetContext(_Symbol, Period(), Magic);
    ES_Log_OnInit();
+   ES_Log_SetContext(_Symbol, Period(), Magic);
    return(0);
 }
 
