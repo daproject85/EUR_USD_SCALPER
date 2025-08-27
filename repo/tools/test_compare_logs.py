@@ -63,3 +63,26 @@ col3
     assert result.returncode != 0
     assert "Candidate header does not match schema" in result.stdout
 
+
+def test_lots_difference_detected(tmp_path):
+    schema_path = tmp_path / "schema.txt"
+    schema_path.write_text("timestamp,event,ticket,op,lots\n")
+
+    header = "timestamp,event,ticket,op,lots\n"
+    baseline = tmp_path / "baseline.csv"
+    candidate = tmp_path / "candidate.csv"
+    baseline.write_text(header + "1,trade,42,0,0.1\n")
+    candidate.write_text(header + "1,trade,42,0,0.2\n")
+
+    result = subprocess.run([
+        sys.executable,
+        str(TOOLS_DIR / "compare_logs.py"),
+        "--baseline", str(baseline),
+        "--candidate", str(candidate),
+        "--schema", str(schema_path),
+        "--align-key", "timestamp,event,ticket,op",
+    ], capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "lots=0.1" in result.stdout and "lots=0.2" in result.stdout
+
