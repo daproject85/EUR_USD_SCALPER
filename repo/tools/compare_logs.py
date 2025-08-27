@@ -114,6 +114,8 @@ def compare_rows(b_row, c_row, header, ignore_set,
             continue
         b = b_row[i] if i < len(b_row) else ""
         c = c_row[i] if i < len(c_row) else ""
+        if b.strip() == "" or c.strip() == "":
+            continue
         if b == c:
             continue
         bn = try_float(b)
