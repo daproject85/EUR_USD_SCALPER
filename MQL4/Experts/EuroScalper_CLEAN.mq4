@@ -156,6 +156,10 @@ void ES_UpdateBasketTP()
    double tpdist = TakeProfit * Point;
    double basket_tp = NormalizeDouble((dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist), _Digits);
 
+   // log assignment prior to issuing any order modifications so that
+   // `BASKET_TP_ASSIGN` precedes `ORDER_MODIFY_*` events in the log
+   ES_Log_Event_TPAssign(vwap, basket_tp);
+
    int total = OrdersTotal();
    for(int i=0; i<total; i++)
    {
@@ -168,19 +172,6 @@ void ES_UpdateBasketTP()
       double open_price = OrderOpenPrice();
       ES_Log_OrderModify(OrderTicket(), open_price, OrderStopLoss(), basket_tp, 0, 65535);
    }
-
-   // log the final TP as accepted by the server after modification
-   double final_tp = basket_tp;
-   for(int i=0; i<total; i++)
-   {
-      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
-      if(OrderSymbol()!=Symbol())      continue;
-      if(OrderMagicNumber()!=Magic)    continue;
-      if(OrderType()!=dir)             continue;
-      final_tp = OrderTakeProfit();
-      break;
-   }
-   ES_Log_Event_TPAssign(vwap, final_tp);
 
    BasketTPUpdatePending = false;
 }
