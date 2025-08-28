@@ -35,9 +35,6 @@ extern bool   Filter_News = true;
 extern bool   invisible_mode = true;
 extern double OpenRangePips = 1;
 extern double MaxDailyRange = 20000;
-
-datetime g_lastBarTime = 0;
-
 // Basket/grid tracking flags
 bool   g_buyBasket   = false;   // analogous to I_b_18
 bool   g_sellBasket  = false;   // analogous to I_b_19
@@ -335,10 +332,6 @@ int init()
 
 int start()
 {
-   if(Time[0] <= g_lastBarTime)
-      return(0);
-   g_lastBarTime = Time[0];
-
    if(!ES_CanTradeNow())
       return(0);
 
