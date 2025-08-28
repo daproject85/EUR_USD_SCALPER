@@ -134,10 +134,9 @@ void ES_UpdateBasketTP()
    if(dir!=OP_BUY && dir!=OP_SELL)
       return;
 
-   double vwap = ES_ComputeVWAP(Magic);
+   double vwap = NormalizeDouble(ES_ComputeVWAP(Magic), _Digits);
    double tpdist = TakeProfit * Point;
-   double basket_tp = (dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist);
-   ES_Log_Event_TPAssign(vwap, basket_tp);
+   double basket_tp = NormalizeDouble((dir==OP_BUY) ? (vwap + tpdist) : (vwap - tpdist), _Digits);
 
    int total = OrdersTotal();
    for(int i=0; i<total; i++)
@@ -148,8 +147,22 @@ void ES_UpdateBasketTP()
       if(OrderType()!=dir)             continue;
       if(MathAbs(OrderTakeProfit() - basket_tp) <= Point)
          continue;
-      ES_Log_OrderModify(OrderTicket(), vwap, OrderStopLoss(), basket_tp, 0, 65535);
+      double open_price = OrderOpenPrice();
+      ES_Log_OrderModify(OrderTicket(), open_price, OrderStopLoss(), basket_tp, 0, 65535);
    }
+
+   // log the final TP as accepted by the server after modification
+   double final_tp = basket_tp;
+   for(int i=0; i<total; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderSymbol()!=Symbol())      continue;
+      if(OrderMagicNumber()!=Magic)    continue;
+      if(OrderType()!=dir)             continue;
+      final_tp = OrderTakeProfit();
+      break;
+   }
+   ES_Log_Event_TPAssign(vwap, final_tp);
 
    BasketTPUpdatePending = false;
 }
