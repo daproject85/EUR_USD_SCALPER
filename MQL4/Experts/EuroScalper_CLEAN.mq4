@@ -42,6 +42,7 @@ bool   g_allowGrid   = false;   // analogous to I_b_22
 double g_lastBuyPrice  = 0.0;   // price of most recent buy
 double g_lastSellPrice = 0.0;   // price of most recent sell
 bool   g_useVolFilter = true;   // mimic I_b_20 baseline behaviour
+bool   g_firstEntryArmed = true; // gate first entry until volume drop
 
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
@@ -327,7 +328,15 @@ int start()
       return(0);
 
    if(OrdersTotal() == 0)
-      ES_OpenFirstTrade();
+   {
+      if(g_firstEntryArmed)
+      {
+         ES_OpenFirstTrade();
+         g_firstEntryArmed = false;
+      }
+      else if(g_useVolFilter && Volume[0] < 2)
+         g_firstEntryArmed = true;
+   }
    else
       ES_TryGridAdd();
 
