@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse, csv, io, sys, os
+from collections import Counter
 
 # -------------------------------
 # Parsing & IO
@@ -53,21 +54,47 @@ def read_csv(path, delimiter_override=None):
 def load_schema(schema_path):
     if not schema_path or not os.path.exists(schema_path):
         return None
+    parts = []
     with open(schema_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            cols = [c.strip() for c in line.replace(";", ",").split(",")]
-            return cols
+            parts.append(line)
+    if parts:
+        joined = ",".join(parts)
+        cols = [c.strip() for c in joined.replace(";", ",").split(",") if c.strip()]
+        return cols
     return None
 
 # -------------------------------
 # Row utilities
 # -------------------------------
-def to_key(row, header, key_cols):
-    idxs = [header.index(k) for k in key_cols if k in header]
-    return tuple(row[i] if i < len(row) else "" for i in idxs)
+def to_key(row, key_cols, idx_map):
+    """Return a tuple key extracted from *row* using *key_cols*.
+
+    Previously this helper would drop columns that were absent in ``idx_map``.
+    When the baseline or candidate CSV was missing one of the requested key
+    columns, the resulting tuple would be shorter than ``key_cols``.  This
+    meant two rows that logically shared the same key could end up with
+    different tuple lengths and therefore never align.  The downstream effect
+    was diff rows showing empty baseline values even though the row existed in
+    the file.
+
+    To make alignment robust, we now always return a tuple of the same length
+    as ``key_cols``.  Missing columns (or indexes beyond the row length) are
+    represented as empty strings, ensuring both baseline and candidate produce
+    comparable keys.
+    """
+
+    key = []
+    for col in key_cols:
+        idx = idx_map.get(col)
+        if idx is not None and idx < len(row):
+            key.append(row[idx])
+        else:
+            key.append("")
+    return tuple(key)
 
 def try_float(x):
     try:
@@ -87,6 +114,8 @@ def compare_rows(b_row, c_row, header, ignore_set,
             continue
         b = b_row[i] if i < len(b_row) else ""
         c = c_row[i] if i < len(c_row) else ""
+        if b.strip() == "" or c.strip() == "":
+            continue
         if b == c:
             continue
         bn = try_float(b)
@@ -237,12 +266,14 @@ def main():
                 sys.exit(1)
 
     key_cols = [k.strip() for k in args.align_key.split(",") if k.strip()]
+    b_idx_map = {k: b_header.index(k) for k in key_cols if k in b_header}
     b_map = {}
     for r in b_rows:
-        b_map.setdefault(to_key(r, b_header, key_cols), []).append(r)
+        b_map.setdefault(to_key(r, key_cols, b_idx_map), []).append(r)
+    c_idx_map = {k: c_header.index(k) for k in key_cols if k in c_header}
     c_map = {}
     for r in c_rows:
-        c_map.setdefault(to_key(r, c_header, key_cols), []).append(r)
+        c_map.setdefault(to_key(r, key_cols, c_idx_map), []).append(r)
 
     ignore_set = set([c.strip() for c in args.ignore_cols.split(",") if c.strip()])
 
@@ -262,15 +293,40 @@ def main():
             if args.strict_rows:
                 mismatches += 1
                 continue
-        for i in range(min(len(b_list), len(c_list))):
-            total += 1
-            diffs = compare_rows(b_list[i], c_list[i], b_header, ignore_set,
-                                 args.float_tol_price, args.float_tol_money, args.float_tol_lots)
-            if diffs:
-                mismatches += 1
-                if shown < args.max_diffs:
-                    diff_records.append({"key": _stringify_key(k), "diffs": diffs})
-                    shown += 1
+        if b_list or c_list:
+            # Align rows using row-content matching rather than index pairing.
+            b_counter = Counter(tuple(r) for r in b_list)
+            c_counter = Counter(tuple(r) for r in c_list)
+
+            # Count rows that match exactly and remove them from the counters.
+            for row in set(b_counter) & set(c_counter):
+                matched = min(b_counter[row], c_counter[row])
+                if matched:
+                    total += matched
+                    b_counter[row] -= matched
+                    c_counter[row] -= matched
+                    if b_counter[row] == 0:
+                        del b_counter[row]
+                    if c_counter[row] == 0:
+                        del c_counter[row]
+
+            # Remaining rows represent mismatches.
+            unmatched_b = [list(row) for row, cnt in b_counter.items() for _ in range(cnt)]
+            unmatched_c = [list(row) for row, cnt in c_counter.items() for _ in range(cnt)]
+
+            empty_row = ["" for _ in b_header]
+            max_len = max(len(unmatched_b), len(unmatched_c))
+            for i in range(max_len):
+                b_row = unmatched_b[i] if i < len(unmatched_b) else empty_row
+                c_row = unmatched_c[i] if i < len(unmatched_c) else empty_row
+                total += 1
+                diffs = compare_rows(b_row, c_row, b_header, ignore_set,
+                                     args.float_tol_price, args.float_tol_money, args.float_tol_lots)
+                if diffs:
+                    mismatches += 1
+                    if shown < args.max_diffs:
+                        diff_records.append({"key": _stringify_key(k), "diffs": diffs})
+                        shown += 1
 
     # Pretty-print
     if rowcount_records and not args.no_rowcount:
