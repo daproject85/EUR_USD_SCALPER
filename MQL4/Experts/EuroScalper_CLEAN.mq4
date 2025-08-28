@@ -38,6 +38,14 @@ extern double MaxDailyRange = 20000;
 
 datetime g_lastBarTime = 0;
 
+// Basket/grid tracking flags
+bool   g_buyBasket   = false;   // analogous to I_b_18
+bool   g_sellBasket  = false;   // analogous to I_b_19
+bool   g_allowGrid   = false;   // analogous to I_b_22
+double g_lastBuyPrice  = 0.0;   // price of most recent buy
+double g_lastSellPrice = 0.0;   // price of most recent sell
+bool   g_useVolFilter = true;   // mimic I_b_20 baseline behaviour
+
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
 {
@@ -256,9 +264,26 @@ void ES_TryGridAdd()
    int existing = ES_CountTrades(dir);
    if(existing >= MaxTrades) return;
 
-   double lastPrice = ES_LastOpenPrice(dir);
+   // set basket flags based on direction
+   g_buyBasket  = (dir==OP_BUY);
+   g_sellBasket = (dir==OP_SELL);
+
+   // determine last price and distance from current quotes
+   double lastPrice = (dir==OP_BUY) ? g_lastBuyPrice : g_lastSellPrice;
+   if(lastPrice <= 0.0)
+      lastPrice = ES_LastOpenPrice(dir);
    double dist = (dir==OP_BUY) ? (lastPrice - Ask) : (Bid - lastPrice);
-   if(dist < Step * Point) return;
+
+   // check grid permission (distance + optional volume filter)
+   if(!g_allowGrid)
+   {
+      bool cond = (dist >= Step * Point);
+      if(g_useVolFilter)
+         cond = cond && (Volume[0] < 5);
+      if(cond)
+         g_allowGrid = true;
+   }
+   if(!g_allowGrid) return;
 
    double lots = ES_NextLotSize(dir);
    double price = (dir==OP_BUY) ? Ask : Bid;
@@ -269,6 +294,19 @@ void ES_TryGridAdd()
    {
       RefreshRates();
       BasketTPUpdatePending = true;
+      g_allowGrid = false;
+      if(dir==OP_BUY)
+      {
+         g_buyBasket   = true;
+         g_sellBasket  = false;
+         g_lastBuyPrice = price;
+      }
+      else
+      {
+         g_buyBasket   = false;
+         g_sellBasket  = true;
+         g_lastSellPrice = price;
+      }
    }
 }
 
