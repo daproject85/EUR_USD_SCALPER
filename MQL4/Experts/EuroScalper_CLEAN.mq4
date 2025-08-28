@@ -56,20 +56,33 @@ bool ES_CanTrade_Session()
 
 bool ES_CanTrade_OpenRange()
 {
-   double dOpen = iOpen(_Symbol, PERIOD_D1, 0);
-   double dHigh = iHigh(_Symbol, PERIOD_D1, 0);
-   double dLow  = iLow (_Symbol, PERIOD_D1, 0);
-   double mid   = (Bid + Ask) * 0.5;
+   if(!Filter_Sideway)
+      return(true);
+   if(OpenRangePips <= 0 || MaxDailyRange <= 0)
+      return(true);
 
-   double distFromOpenPts = MathAbs(mid - dOpen) / Point;
-   double dayRangePts     = (dHigh - dLow) / Point;
+   int today = DayOfYear();
+   double dayOpen = 0.0;
+   int bars = iBars(_Symbol, PERIOD_M1);
+   for(int i=0; i<bars; i++)
+   {
+      datetime t = iTime(_Symbol, PERIOD_M1, i);
+      if(TimeDayOfYear(t) != today)
+         break;
+      dayOpen = iOpen(_Symbol, PERIOD_M1, i);
+   }
 
-   if(Filter_Sideway && distFromOpenPts < OpenRangePips)
-      return(false);
-   if(dayRangePts > MaxDailyRange)
-      return(false);
+   double upper = NormalizeDouble(dayOpen + OpenRangePips * Point, _Digits);
+   double lower = NormalizeDouble(dayOpen - OpenRangePips * Point, _Digits);
+   double price = Close[0];
+   double upperLimit = NormalizeDouble(upper + MaxDailyRange * Point, _Digits);
+   double lowerLimit = NormalizeDouble(lower - MaxDailyRange * Point, _Digits);
 
-   return(true);
+   if((price > upper && price < upperLimit) ||
+      (price < lower && price > lowerLimit))
+      return(true);
+
+   return(false);
 }
 
 bool ES_CanTradeNow()
