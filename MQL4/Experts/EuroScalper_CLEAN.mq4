@@ -93,7 +93,7 @@ bool ES_CanTrade_OpenRange()
 
 bool ES_CanTradeNow()
 {
-   if(!ES_CanTrade_Session())
+      if(!ES_CanTrade_Session())
       return(false);
 
    // Evaluate the open-range filter only when no trades are open for this
@@ -102,6 +102,7 @@ bool ES_CanTradeNow()
    // session hours.
    if(ES_TotalTrades() == 0 && !ES_CanTrade_OpenRange())
       return(false);
+
 
    return(true);
 }
