@@ -67,16 +67,23 @@ bool ES_CanTrade_OpenRange()
    if(OpenRangePips <= 0 || MaxDailyRange <= 0)
       return(true);
 
-   int today = DayOfYear();
-   double dayOpen = 0.0;
-   int bars = iBars(_Symbol, PERIOD_M1);
-   for(int i=0; i<bars; i++)
+   // Obtain the day's opening price from the daily timeframe for reliability.
+   // Fall back to scanning M1 bars only if the daily open is unavailable.
+   double dayOpen = iOpen(_Symbol, PERIOD_D1, 0);
+   if(dayOpen <= 0.0)
    {
-      datetime t = iTime(_Symbol, PERIOD_M1, i);
-      if(TimeDayOfYear(t) != today)
-         break;
-      dayOpen = iOpen(_Symbol, PERIOD_M1, i);
+      int today = DayOfYear();
+      int bars = iBars(_Symbol, PERIOD_M1);
+      for(int i=0; i<bars; i++)
+      {
+         datetime t = iTime(_Symbol, PERIOD_M1, i);
+         if(TimeDayOfYear(t) != today)
+            break;
+         dayOpen = iOpen(_Symbol, PERIOD_M1, i);
+      }
    }
+   if(dayOpen <= 0.0)
+      return(false);
 
    double upper = NormalizeDouble(dayOpen + OpenRangePips * Point, _Digits);
    double lower = NormalizeDouble(dayOpen - OpenRangePips * Point, _Digits);
@@ -93,8 +100,16 @@ bool ES_CanTrade_OpenRange()
 
 bool ES_CanTradeNow()
 {
-   if(!ES_CanTrade_Session())   return(false);
-   if(!ES_CanTrade_OpenRange()) return(false);
+   if(!ES_CanTrade_Session())
+      return(false);
+
+   // Evaluate the open-range filter only when the account has no open
+   // orders. Once any position exists (even from another EA), skip the
+   // open-range check so grid additions proceed while session hours are
+   // still enforced.
+   if(OrdersTotal() == 0 && !ES_CanTrade_OpenRange())
+      return(false);
+
    return(true);
 }
 
@@ -139,6 +154,22 @@ int ES_OpenFirstTrade()
    if(ticket > 0)
    {
       BasketTPUpdatePending = true;
+      g_allowGrid = false;
+
+      if(cmd == OP_BUY)
+      {
+         g_buyBasket    = true;
+         g_sellBasket   = false;
+         g_lastBuyPrice = price;
+         g_lastSellPrice = 0.0;
+      }
+      else
+      {
+         g_buyBasket    = false;
+         g_sellBasket   = true;
+         g_lastSellPrice = price;
+         g_lastBuyPrice  = 0.0;
+      }
    }
    return(ticket);
 }
@@ -204,6 +235,11 @@ int ES_CountTrades(const int cmd)
       if(OrderType()==cmd)             count++;
    }
    return(count);
+}
+
+int ES_TotalTrades()
+{
+   return(ES_CountTrades(OP_BUY) + ES_CountTrades(OP_SELL));
 }
 
 double ES_LastOpenPrice(const int cmd)
@@ -326,7 +362,7 @@ int start()
    if(!ES_CanTradeNow())
       return(0);
 
-   if(OrdersTotal() == 0)
+   if(ES_TotalTrades() == 0)
    {
       bool ok = (!g_useVolFilter) || (Volume[0] < 2);
       if(ok)
