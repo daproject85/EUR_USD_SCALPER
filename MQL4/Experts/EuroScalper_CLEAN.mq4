@@ -131,10 +131,10 @@ int ES_OpenFirstTrade()
    const int SLIPPAGE = 5; // baseline parity
 
    RefreshRates();
-   if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
-   else                    { cmd = OP_BUY;  price = Ask; }
+   if(Close[2] > Close[1]) { cmd = OP_SELL; }
+   else                    { cmd = OP_BUY;  }
 
-   RefreshRates();
+   price = (cmd == OP_SELL) ? Bid : Ask;
    int ticket = (int)ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
                                  0, 0, StringConcatenate(Symbol(),"-Euro Scalper-0"), Magic, 0, clrNONE);
 
