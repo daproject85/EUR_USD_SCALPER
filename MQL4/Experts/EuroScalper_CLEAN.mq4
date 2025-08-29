@@ -130,15 +130,16 @@ int ES_OpenFirstTrade()
    double price = 0;
    const int SLIPPAGE = 5; // baseline parity
 
+   RefreshRates();
    if(Close[2] > Close[1]) { cmd = OP_SELL; price = Bid; }
    else                    { cmd = OP_BUY;  price = Ask; }
 
+   RefreshRates();
    int ticket = (int)ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
                                  0, 0, StringConcatenate(Symbol(),"-Euro Scalper-0"), Magic, 0, clrNONE);
 
    if(ticket > 0)
    {
-      RefreshRates();
       BasketTPUpdatePending = true;
    }
    return(ticket);
