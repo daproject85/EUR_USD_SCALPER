@@ -131,10 +131,8 @@ int ES_OpenFirstTrade()
    const int SLIPPAGE = 5; // baseline parity
 
    RefreshRates();
-   if(Close[2] > Close[1]) { cmd = OP_SELL; }
-   else                    { cmd = OP_BUY;  }
-
-   price = (cmd == OP_SELL) ? Bid : Ask;
+   cmd = (Close[2] > Close[1]) ? OP_SELL : OP_BUY;
+   price = (cmd == OP_BUY) ? NormalizeDouble(Ask, _Digits) : NormalizeDouble(Bid, _Digits);
    int ticket = (int)ES_Log_OrderSend(Symbol(), cmd, lots, price, SLIPPAGE,
                                  0, 0, StringConcatenate(Symbol(),"-Euro Scalper-0"), Magic, 0, clrNONE);
 
@@ -330,13 +328,9 @@ int start()
 
    if(OrdersTotal() == 0)
    {
-      if(g_firstEntryArmed)
-      {
+      bool ok = (!g_useVolFilter) || (Volume[0] < 2);
+      if(ok)
          ES_OpenFirstTrade();
-         g_firstEntryArmed = false;
-      }
-      else if(g_useVolFilter && Volume[0] < 2)
-         g_firstEntryArmed = true;
    }
    else
       ES_TryGridAdd();
