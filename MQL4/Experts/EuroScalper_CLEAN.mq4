@@ -93,8 +93,16 @@ bool ES_CanTrade_OpenRange()
 
 bool ES_CanTradeNow()
 {
-   if(!ES_CanTrade_Session())   return(false);
-   if(!ES_CanTrade_OpenRange()) return(false);
+   if(!ES_CanTrade_Session())
+      return(false);
+
+   // Evaluate the open-range filter only when no trades are open for this
+   // symbol/magic. Once a position exists, subsequent grid additions
+   // should ignore the open-range state, while still being gated by
+   // session hours.
+   if(ES_TotalTrades() == 0 && !ES_CanTrade_OpenRange())
+      return(false);
+
    return(true);
 }
 
@@ -204,6 +212,11 @@ int ES_CountTrades(const int cmd)
       if(OrderType()==cmd)             count++;
    }
    return(count);
+}
+
+int ES_TotalTrades()
+{
+   return(ES_CountTrades(OP_BUY) + ES_CountTrades(OP_SELL));
 }
 
 double ES_LastOpenPrice(const int cmd)
@@ -326,7 +339,7 @@ int start()
    if(!ES_CanTradeNow())
       return(0);
 
-   if(OrdersTotal() == 0)
+   if(ES_TotalTrades() == 0)
    {
       bool ok = (!g_useVolFilter) || (Volume[0] < 2);
       if(ok)
