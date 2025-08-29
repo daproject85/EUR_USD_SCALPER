@@ -154,6 +154,22 @@ int ES_OpenFirstTrade()
    if(ticket > 0)
    {
       BasketTPUpdatePending = true;
+      g_allowGrid = false;
+
+      if(cmd == OP_BUY)
+      {
+         g_buyBasket    = true;
+         g_sellBasket   = false;
+         g_lastBuyPrice = price;
+         g_lastSellPrice = 0.0;
+      }
+      else
+      {
+         g_buyBasket    = false;
+         g_sellBasket   = true;
+         g_lastSellPrice = price;
+         g_lastBuyPrice  = 0.0;
+      }
    }
    return(ticket);
 }
