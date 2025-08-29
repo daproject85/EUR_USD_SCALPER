@@ -93,15 +93,8 @@ bool ES_CanTrade_OpenRange()
 
 bool ES_CanTradeNow()
 {
-   if(!ES_CanTrade_Session())
-      return(false);
-
-   // Evaluate the open-range filter only when no trades are open. Once a
-   // position exists, subsequent grid additions should ignore the
-   // open-range state, while still being gated by session hours.
-   if(OrdersTotal() == 0 && !ES_CanTrade_OpenRange())
-      return(false);
-
+   if(!ES_CanTrade_Session())   return(false);
+   if(!ES_CanTrade_OpenRange()) return(false);
    return(true);
 }
 
@@ -330,14 +323,12 @@ int init()
 
 int start()
 {
-   if(!ES_CanTradeNow())
-      return(0);
+   if(!ES_CanTrade_Session()) return(0);
 
    if(OrdersTotal() == 0)
    {
       bool ok = (!g_useVolFilter) || (Volume[0] < 2);
-      if(ok)
-         ES_OpenFirstTrade();
+      if(ok && ES_CanTrade_OpenRange()) ES_OpenFirstTrade();
    }
    else
       ES_TryGridAdd();
