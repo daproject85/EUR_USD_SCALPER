@@ -284,12 +284,16 @@ double ES_LastLotSize(const int cmd)
 
 double ES_NextLotSize(const int cmd)
 {
-   // Match baseline martingale sizing: multiply the base lot by
-   // LotMultiplikator for each existing trade in the grid and round
-   // to broker precision (two decimals).
+   // Match baseline martingale sizing: the multiplier is applied
+   // based on the number of *previous* trades in the basket.  If
+   // there are N existing trades, the exponent should be N-1 so that
+   // the first additional order still uses the base lot.
    int count = ES_CountTrades(cmd);
+   if(count > 0)
+      count--;                    // use previous-trade count for exponent
+
    double lots = Lot * MathPow(LotMultiplikator, count);
-   return NormalizeDouble(lots, 2);
+   return NormalizeDouble(lots, 2);   // broker precision (two decimals)
 }
 
 void ES_TryGridAdd()
