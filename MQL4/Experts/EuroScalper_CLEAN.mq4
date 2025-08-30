@@ -18,6 +18,7 @@ extern bool   Hidden_TP = true;
 extern double Hiden_TP = 500;
 extern double Lot = 0.01;
 extern double LotMultiplikator = 1.21;
+extern int    LotMode = 1; // 1=multiplicative, else additive
 extern double TakeProfit = 34;
 extern double Step = 21;
 extern double Averaging = 1;
@@ -43,6 +44,9 @@ double g_lastBuyPrice  = 0.0;   // price of most recent buy
 double g_lastSellPrice = 0.0;   // price of most recent sell
 bool   g_useVolFilter = true;   // mimic I_b_20 baseline behaviour
 bool   g_firstEntryArmed = true; // gate first entry until volume drop
+
+int    trade_counter = -2;
+double next_lot = 0.0;
 
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
@@ -304,6 +308,9 @@ void ES_TryGridAdd()
    int existing = ES_CountTrades(dir);
    if(existing >= MaxTrades) return;
 
+   if(trade_counter != -2)
+      return;
+
    // set basket flags based on direction
    g_buyBasket  = (dir==OP_BUY);
    g_sellBasket = (dir==OP_SELL);
@@ -325,13 +332,23 @@ void ES_TryGridAdd()
    }
    if(!g_allowGrid) return;
 
-   double lots = ES_NextLotSize(dir);
+   double lots = next_lot;
    double price = (dir==OP_BUY) ? Ask : Bid;
    string comment = StringFormat("%s-Euro Scalper-%d", Symbol(), existing);
    int ticket = (int)ES_Log_OrderSend(Symbol(), dir, lots, price, 5,
                                       0,0, comment, Magic, 0, clrNONE);
    if(ticket>0)
    {
+      trade_counter++;
+      if(trade_counter >= Averaging)
+      {
+         trade_counter = -2;
+         if(LotMode == 1)
+            next_lot *= LotMultiplikator;
+         else
+            next_lot += Lot;
+         next_lot = NormalizeDouble(next_lot, 2);
+      }
       RefreshRates();
       BasketTPUpdatePending = true;
       g_allowGrid = false;
@@ -357,6 +374,8 @@ int init()
    ES_Log_RunTag = ES_RUN_TAG;
    ES_Log_OnInit();
    ES_Log_SetContext(_Symbol, Period(), Magic);
+   trade_counter = -2;
+   next_lot = Lot;
    return(0);
 }
 
@@ -367,6 +386,8 @@ int start()
 
    if(ES_TotalTrades() == 0)
    {
+      trade_counter = -2;
+      next_lot = Lot;
       bool ok = (!g_useVolFilter) || (Volume[0] < 2);
       if(ok)
          ES_OpenFirstTrade();
