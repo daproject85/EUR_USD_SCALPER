@@ -55,8 +55,8 @@ This document defines the exact CSV output produced by EuroScalper’s logger. I
 
 - **ORDER_SEND_ATTEMPT** — an order is about to be sent. Relevant fields: `order_type`, `lots`, `price`, `sl`, `tp`, `slip`, `note` (comment).
 - **ORDER_SEND_RESULT** — result of `OrderSend`. Relevant: `result`, `error`, `ticket`, `price`, `note`.
-- **ORDER_CLOSE_ATTEMPT** — an order is about to be closed. Relevant: `ticket`, `order_type`, `lots`, `price`, `slip`.
-- **ORDER_CLOSE_RESULT** — result of `OrderClose`. Relevant: `result`, `error`, `ticket`, `note`.
+- **ORDER_CLOSE_ATTEMPT** — an order is about to be closed. Relevant: `ticket`, `order_type`, `lots`, `price`, `slip`. Also emitted when a TP or SL closes an order automatically; in that case `slip=0` and `note` contains `reason=TP` or `reason=SL`.
+- **ORDER_CLOSE_RESULT** — result of `OrderClose` or a TP/SL auto-close. Relevant: `result`, `error`, `ticket`, `note`. Auto-close rows always log `result=1` and an empty `error`.
 - **ORDER_MODIFY_ATTEMPT** — an order is about to be modified. Relevant: `ticket`, `sl`, `tp`, `price` (new open price for pending) and `note`.
 - **ORDER_MODIFY_RESULT** — result of `OrderModify`. Relevant: `result`, `error`, `ticket`, `note`.
 - **BASKET_TP_ASSIGN** — basket VWAP & TP recomputed/assigned. Relevant: `vwap`, `basket_tp`, `note` (may include rationale or components). `ticket=0`, `order_type=-1`.
@@ -110,6 +110,8 @@ The **FROM** and **TO** segments record the backtest's first and last tick times
 - Empty cells indicate “not applicable” for that event.
 
 ## Changelog
+- **v1.3.2** — Clarified TP/SL auto-close rows and consolidated logging via shared include.
+- **v1.3.1** — Documented TP/SL auto-close `ORDER_CLOSE_*` rows.
 - **v1.3** — Added end timestamp (`_TO_`) to filename.
 - **v1.2** — Updated filename convention: removed MAGIC from filename; added RUN_TAG (BASELINE/CLEAN).
 - **v1.1** — `op` → `order_type`; added readable order types and expanded event notes.
