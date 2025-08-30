@@ -192,7 +192,8 @@ void ES_UpdateBasketTP()
    ES_Log_Event_TPAssign(vwap, basket_tp);
 
    int total = OrdersTotal();
-   for(int i=0; i<total; i++)
+   // iterate newest to oldest so ORDER_MODIFY_* entries align with baseline logs
+   for(int i = total - 1; i >= 0; i--)
    {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
       if(OrderSymbol()!=Symbol())      continue;
