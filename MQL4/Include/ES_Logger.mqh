@@ -225,6 +225,7 @@ bool ES_Log_OrderModify(int ticket, double price, double stoploss, double takepr
    return ok;
 }
 
+#ifdef __MQL5__
 void OnTradeTransaction(const MqlTradeTransaction &trans,
                         const MqlTradeRequest &request,
                         const MqlTradeResult &result)
@@ -247,3 +248,4 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       ES_Log_Write("ORDER_CLOSE_RESULT", ticket, op, lots, price, sl, tp, 0, 1, 0, reason);
    }
 }
+#endif // __MQL5__

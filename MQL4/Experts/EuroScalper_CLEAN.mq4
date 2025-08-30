@@ -46,10 +46,8 @@ double g_lastBuyPrice  = 0.0;   // price of most recent buy
 double g_lastSellPrice = 0.0;   // price of most recent sell
 bool   g_useVolFilter = true;   // mimic I_b_20 baseline behaviour
 bool   g_firstEntryArmed = true; // gate first entry until volume drop
-int    trade_counter = 0;        // -2 indicates rescue sizing
-
-int    trade_counter = -2;
-double next_lot = 0.0;
+int    trade_counter = -2;      // -2 indicates rescue sizing
+double next_lot    = 0.0;
 
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
@@ -291,12 +289,12 @@ double ES_LastLotSize(const int cmd)
 
 double ES_RescueLotSize()
 {
-   double next_lot = Lot;
+   double rescue_lot = Lot;
 
    switch(RescueMode)
    {
       case 0:
-         next_lot = Lot;
+         rescue_lot = Lot;
          break;
 
       case 1:
@@ -304,15 +302,16 @@ double ES_RescueLotSize()
          {
             int count = ES_TotalTrades();
             if(count > 0)
-               next_lot = Lot * MathPow(LotMultiplikator, count);
+               rescue_lot = Lot * MathPow(LotMultiplikator, count);
             else
-               next_lot = Lot;
+               rescue_lot = Lot;
          }
          else
-            next_lot = Lot;
+            rescue_lot = Lot;
          break;
 
       case 2:
+      {
          double baseLot = Lot;
          int total = OrdersHistoryTotal();
          for(int i=total-1; i>=0; --i)
@@ -327,13 +326,14 @@ double ES_RescueLotSize()
             }
          }
          if(AddMultiplyFlag == 1)
-            next_lot = baseLot * LotMultiplikator;
+            rescue_lot = baseLot * LotMultiplikator;
          else
-            next_lot = baseLot + Lot;
+            rescue_lot = baseLot + Lot;
          break;
+      }
    }
 
-   return NormalizeDouble(next_lot, 2);
+   return NormalizeDouble(rescue_lot, 2);
 }
 
 double ES_NextLotSize(const int cmd)
