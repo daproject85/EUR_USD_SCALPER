@@ -35,6 +35,8 @@ extern bool   Filter_News = true;
 extern bool   invisible_mode = true;
 extern double OpenRangePips = 1;
 extern double MaxDailyRange = 20000;
+extern int    RescueMode = 0;       // 0=fixed, 1=multiplier, 2=use last losing trade
+extern int    AddMultiplyFlag = 1;  // 1=multiply, 0=add
 // Basket/grid tracking flags
 bool   g_buyBasket   = false;   // analogous to I_b_18
 bool   g_sellBasket  = false;   // analogous to I_b_19
@@ -43,6 +45,7 @@ double g_lastBuyPrice  = 0.0;   // price of most recent buy
 double g_lastSellPrice = 0.0;   // price of most recent sell
 bool   g_useVolFilter = true;   // mimic I_b_20 baseline behaviour
 bool   g_firstEntryArmed = true; // gate first entry until volume drop
+int    trade_counter = 0;        // -2 indicates rescue sizing
 
 // ---- Session & Open-Range Gating ----
 bool ES_CanTrade_Session()
@@ -279,11 +282,61 @@ double ES_LastLotSize(const int cmd)
          lots=OrderLots();
       }
    }
-   return(lots);
+  return(lots);
+}
+
+double ES_RescueLotSize()
+{
+   double next_lot = Lot;
+
+   switch(RescueMode)
+   {
+      case 0:
+         next_lot = Lot;
+         break;
+
+      case 1:
+         if(AddMultiplyFlag == 1)
+         {
+            int count = ES_TotalTrades();
+            if(count > 0)
+               next_lot = Lot * MathPow(LotMultiplikator, count);
+            else
+               next_lot = Lot;
+         }
+         else
+            next_lot = Lot;
+         break;
+
+      case 2:
+         double baseLot = Lot;
+         int total = OrdersHistoryTotal();
+         for(int i=total-1; i>=0; --i)
+         {
+            if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
+            if(OrderSymbol() != Symbol()) continue;
+            if(OrderMagicNumber() != Magic) continue;
+            if(OrderProfit() < 0)
+            {
+               baseLot = OrderLots();
+               break;
+            }
+         }
+         if(AddMultiplyFlag == 1)
+            next_lot = baseLot * LotMultiplikator;
+         else
+            next_lot = baseLot + Lot;
+         break;
+   }
+
+   return NormalizeDouble(next_lot, 2);
 }
 
 double ES_NextLotSize(const int cmd)
 {
+   if(trade_counter == -2)
+      return ES_RescueLotSize();
+
    // Match baseline martingale sizing: the multiplier is applied
    // based on the number of *previous* trades in the basket.  If
    // there are N existing trades, the exponent should be N-1 so that
