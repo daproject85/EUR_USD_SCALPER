@@ -312,14 +312,24 @@ void ES_TryGridAdd()
    double lastPrice = (dir==OP_BUY) ? g_lastBuyPrice : g_lastSellPrice;
    if(lastPrice <= 0.0)
       lastPrice = ES_LastOpenPrice(dir);
-   double dist = (dir==OP_BUY) ? (lastPrice - Ask) : (Bid - lastPrice);
+   double bid = Bid;
+   double ask = Ask;
+   double dist = (dir==OP_BUY) ? (lastPrice - ask) : (bid - lastPrice);
+   int    vol  = Volume[0];
 
    // check grid permission (distance + optional volume filter)
    if(!g_allowGrid)
    {
       bool cond = (dist >= Step * Point);
       if(g_useVolFilter)
-         cond = cond && (Volume[0] < 5);
+         cond = cond && (vol < 5);
+
+      string note = StringFormat(
+         "dir=%s;last=%.5f;bid=%.5f;ask=%.5f;dist=%.5f;vol=%d;cond=%d;allow=%d;existing=%d",
+         (dir==OP_BUY?"BUY":"SELL"), lastPrice, bid, ask, dist, vol,
+         cond?1:0, g_allowGrid?1:0, existing);
+      ES_Log_Write("GRID_EVAL", 0, dir, 0, 0, 0, 0, 0, 1, 0, note);
+
       if(cond)
          g_allowGrid = true;
    }
