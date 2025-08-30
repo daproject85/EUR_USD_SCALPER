@@ -224,3 +224,26 @@ bool ES_Log_OrderModify(int ticket, double price, double stoploss, double takepr
    ES_Log_Write("ORDER_MODIFY_RESULT", ticket, op, OrderLots(), price, stoploss, takeprofit, 0, ok?1:0, err, "");
    return ok;
 }
+
+void OnTradeTransaction(const MqlTradeTransaction &trans,
+                        const MqlTradeRequest &request,
+                        const MqlTradeResult &result)
+{
+   if(trans.type==TRADE_TRANSACTION_DEAL_ADD &&
+      (trans.reason==DEAL_REASON_TP || trans.reason==DEAL_REASON_SL))
+   {
+      int ticket = (int)trans.order;
+      if(!OrderSelect(ticket, SELECT_BY_TICKET, MODE_HISTORY))
+         return;
+      if(OrderSymbol() != ES_log_symbol || OrderMagicNumber() != ES_log_magic)
+         return;
+      int    op    = OrderType();
+      double lots  = OrderLots();
+      double price = OrderClosePrice();
+      double sl    = OrderStopLoss();
+      double tp    = OrderTakeProfit();
+      string reason = (trans.reason==DEAL_REASON_TP) ? "reason=TP" : "reason=SL";
+      ES_Log_Write("ORDER_CLOSE_ATTEMPT", ticket, op, lots, price, sl, tp, 0, 0, 0, reason);
+      ES_Log_Write("ORDER_CLOSE_RESULT", ticket, op, lots, price, sl, tp, 0, 1, 0, reason);
+   }
+}
