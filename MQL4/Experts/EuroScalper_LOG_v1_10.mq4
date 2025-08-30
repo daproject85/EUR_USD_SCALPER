@@ -1023,12 +1023,24 @@ int start() {
       if (I_b_20 == 0) {
          if (I_b_18) {
             G_d_65 = (I_d_63 - Ask);
+            double L_d_normDist_1 = NormalizeDouble(G_d_65, _Digits);
+            string L_s_note_1 = StringFormat("dist=%s; step=%s; step_point=%s",
+                                          DoubleToString(L_d_normDist_1, _Digits),
+                                          DoubleToString(I_d_47, 2),
+                                          DoubleToString(I_d_47 * _Point, _Digits));
+            ES_Log_Write("GRID_DISTANCE_CHECK", 0, -1, 0, 0, 0, 0, 0, 1, 0, L_s_note_1);
             if ((G_d_65 >= (I_d_47 * _Point))) {
                I_b_22 = true;
             }
          }
          if (I_b_19 != false) {
             G_d_65 = (Bid - I_d_64);
+            double L_d_normDist_2 = NormalizeDouble(G_d_65, _Digits);
+            string L_s_note_2 = StringFormat("dist=%s; step=%s; step_point=%s",
+                                          DoubleToString(L_d_normDist_2, _Digits),
+                                          DoubleToString(I_d_47, 2),
+                                          DoubleToString(I_d_47 * _Point, _Digits));
+            ES_Log_Write("GRID_DISTANCE_CHECK", 0, -1, 0, 0, 0, 0, 0, 1, 0, L_s_note_2);
             if ((G_d_65 >= (I_d_47 * _Point))) {
                I_b_22 = true;
             }
@@ -1037,12 +1049,24 @@ int start() {
          if (I_b_20 == true && Volume[0] < 5) {
             if (I_b_18) {
                G_d_104 = (I_d_63 - Ask);
+               double L_d_normDist_3 = NormalizeDouble(G_d_104, _Digits);
+               string L_s_note_3 = StringFormat("dist=%s; step=%s; step_point=%s",
+                                             DoubleToString(L_d_normDist_3, _Digits),
+                                             DoubleToString(I_d_47, 2),
+                                             DoubleToString(I_d_47 * _Point, _Digits));
+               ES_Log_Write("GRID_DISTANCE_CHECK", 0, -1, 0, 0, 0, 0, 0, 1, 0, L_s_note_3);
                if ((G_d_104 >= (I_d_47 * _Point))) {
                   I_b_22 = true;
                }
             }
             if (I_b_19) {
                G_d_104 = (Bid - I_d_64);
+               double L_d_normDist_4 = NormalizeDouble(G_d_104, _Digits);
+               string L_s_note_4 = StringFormat("dist=%s; step=%s; step_point=%s",
+                                             DoubleToString(L_d_normDist_4, _Digits),
+                                             DoubleToString(I_d_47, 2),
+                                             DoubleToString(I_d_47 * _Point, _Digits));
+               ES_Log_Write("GRID_DISTANCE_CHECK", 0, -1, 0, 0, 0, 0, 0, 1, 0, L_s_note_4);
                if ((G_d_104 >= (I_d_47 * _Point))) {
                   I_b_22 = true;
                }

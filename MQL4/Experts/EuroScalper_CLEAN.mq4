@@ -317,6 +317,14 @@ void ES_TryGridAdd()
    double dist = (dir==OP_BUY) ? (lastPrice - ask) : (bid - lastPrice);
    int    vol  = Volume[0];
 
+   // log values used in the distance comparison
+   double normDist = NormalizeDouble(dist, _Digits);
+   string note = StringFormat("dist=%s; step=%s; step_point=%s",
+                              DoubleToString(normDist, _Digits),
+                              DoubleToString(Step, 2),
+                              DoubleToString(Step * Point, _Digits));
+   ES_Log_Write("GRID_DISTANCE_CHECK", 0, -1, 0, 0, 0, 0, 0, 1, 0, note);
+
    // check grid permission (distance + optional volume filter)
    if(!g_allowGrid)
    {
